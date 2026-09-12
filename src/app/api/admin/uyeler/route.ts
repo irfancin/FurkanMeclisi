@@ -105,13 +105,12 @@ export async function POST(req: NextRequest) {
       .single()
 
     if ((grup?.grup_tipi ?? 'Hatim') === 'Hatim') {
-      const bugun = bugunTR()
       const { data: donem } = await supabase
         .from('donemler')
         .select('id')
         .eq('grup_id', grup_id)
-        .lte('baslangic_tarihi', bugun)
-        .gte('bitis_tarihi', bugun)
+        .order('tur_no', { ascending: false })
+        .limit(1)
         .maybeSingle()
 
       if (donem) {

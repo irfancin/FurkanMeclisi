@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = await createClient()
-  const bugun = bugunTR()
 
   // Grubun tipi
   const { data: grup } = await supabase
@@ -24,13 +23,13 @@ export async function POST(req: NextRequest) {
     .single()
   const isHatim = (grup?.grup_tipi ?? 'Hatim') === 'Hatim'
 
-  // Aktif dönem
+  // En son dönem (aktif olup olmadığına bakılmaksızın)
   const { data: donem } = await supabase
     .from('donemler')
-    .select('id')
+    .select('id, tur_no')
     .eq('grup_id', grup_id)
-    .lte('baslangic_tarihi', bugun)
-    .gte('bitis_tarihi', bugun)
+    .order('tur_no', { ascending: false })
+    .limit(1)
     .maybeSingle()
 
   // Mevcut cüz atamaları (Hatim grubuysa)
@@ -46,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   let eklenen = 0
   const atlanenlar: { ad: string; sebep: string }[] = []
-  const excelTelSet = new Set<string>() // Excel içi tekrar tespiti
+  const excelTelSet = new Set<string>()
 
   for (const uye of uyeler) {
     const tel = String(uye.tel_no).replace(/\D/g, '')
@@ -55,26 +54,62 @@ export async function POST(req: NextRequest) {
     if (!ad) { atlanenlar.push({ ad: '(isimsiz satır)', sebep: 'Ad soyad boş' }); continue }
     if (!tel) { atlanenlar.push({ ad, sebep: 'Telefon numarası boş' }); continue }
 
-    // Excel içinde aynı numara tekrarı
     if (excelTelSet.has(tel)) {
       atlanenlar.push({ ad, sebep: `Tel. no listede tekrarlıyor (${tel})` }); continue
     }
     excelTelSet.add(tel)
 
-    // DB'de kayıtlı mı? (aktif veya pasif — tel_no unique constraint herkese geçerli)
+    // DB'de kayıtlı mı? (aktif veya pasif)
     const { data: mevcut } = await supabase
       .from('kullanicilar')
-      .select('id, ad_soyad, aktif, gruplar(grup_adi)')
+      .select('id, ad_soyad, aktif, grup_id, gruplar(grup_adi)')
       .eq('tel_no', tel)
       .maybeSingle()
 
     if (mevcut) {
+      const ayniGrup = (mevcut as { grup_id: string }).grup_id === grup_id
+      const aktifMi = (mevcut as { aktif: boolean }).aktif
+
+      // Aynı grupta aktif üye — cüz ataması eksikse Excel'den tamamla
+      if (ayniGrup && aktifMi && donem && isHatim) {
+        const { data: mevcutAtama } = await supabase
+          .from('donem_atamalari')
+          .select('id')
+          .eq('kullanici_id', (mevcut as { id: string }).id)
+          .eq('donem_id', donem.id)
+          .maybeSingle()
+
+        if (!mevcutAtama) {
+          const istenenCuz = uye.cuz_no && Number.isInteger(Number(uye.cuz_no)) ? Number(uye.cuz_no) : null
+          let cuz_no: number | null = null
+
+          if (istenenCuz && istenenCuz >= 1 && istenenCuz <= 30 && !atananSet.has(istenenCuz)) {
+            cuz_no = istenenCuz
+          } else {
+            for (let i = 1; i <= 30; i++) {
+              if (!atananSet.has(i)) { cuz_no = i; break }
+            }
+          }
+
+          if (cuz_no) {
+            await supabase.from('donem_atamalari').insert({
+              kullanici_id: (mevcut as { id: string }).id,
+              donem_id: donem.id,
+              cuz_no,
+            })
+            atananSet.add(cuz_no)
+            eklenen++
+          }
+          continue
+        }
+      }
+
       const grupAdi = (mevcut as { gruplar?: { grup_adi?: string } }).gruplar?.grup_adi ?? 'başka grupta'
-      const durum = (mevcut as { aktif: boolean }).aktif ? '' : ' (pasif kayıt)'
+      const durum = aktifMi ? '' : ' (pasif kayıt)'
       atlanenlar.push({ ad, sebep: `Zaten kayıtlı — ${grupAdi}${durum}` }); continue
     }
 
-    // Üye ekle
+    // Yeni üye ekle
     const { data: yeni, error } = await supabase
       .from('kullanicilar')
       .insert({ tel_no: tel, ad_soyad: ad, grup_id, kullanici_tipi: 'Uye' })
@@ -87,17 +122,12 @@ export async function POST(req: NextRequest) {
 
     // Cüz ataması (yalnızca Hatim grubu)
     if (donem && isHatim) {
-      // Excel'den gelen cüz no geçerliyse onu kullan, çakışıyorsa otomatik ata
-      const istenenCuz = uye.cuz_no && Number.isInteger(Number(uye.cuz_no))
-        ? Number(uye.cuz_no)
-        : null
-
+      const istenenCuz = uye.cuz_no && Number.isInteger(Number(uye.cuz_no)) ? Number(uye.cuz_no) : null
       let cuz_no: number | null = null
 
       if (istenenCuz && istenenCuz >= 1 && istenenCuz <= 30 && !atananSet.has(istenenCuz)) {
         cuz_no = istenenCuz
       } else {
-        // İstenen cüz boş veya çakışıyor → ilk müsait cüzü ata
         for (let i = 1; i <= 30; i++) {
           if (!atananSet.has(i)) { cuz_no = i; break }
         }
