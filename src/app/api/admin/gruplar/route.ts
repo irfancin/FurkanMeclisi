@@ -16,13 +16,12 @@ export async function GET() {
   // Her grup için en son dönemi getir
   const gruplarDetay = await Promise.all(
     (gruplar ?? []).map(async g => {
-      const { data: donem } = await supabase
+      const { data: donemListesi } = await supabase
         .from('donemler')
         .select('tur_no, baslangic_tarihi, bitis_tarihi')
         .eq('grup_id', g.id)
         .order('tur_no', { ascending: false })
-        .limit(1)
-        .single()
+        .limit(2)
 
       const { count: uye_sayisi } = await supabase
         .from('kullanicilar')
@@ -31,7 +30,12 @@ export async function GET() {
         .eq('aktif', true)
         .eq('kullanici_tipi', 'Uye')
 
-      return { ...g, donem: donem ?? null, uye_sayisi: uye_sayisi ?? 0 }
+      return {
+        ...g,
+        donem: donemListesi?.[0] ?? null,
+        oncekiDonem: donemListesi?.[1] ?? null,
+        uye_sayisi: uye_sayisi ?? 0,
+      }
     })
   )
 
