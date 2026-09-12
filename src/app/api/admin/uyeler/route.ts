@@ -70,11 +70,12 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createClient()
 
-  // Telefon no tekrar kontrolü (aktif kullanıcılar)
+  // Telefon no tekrar kontrolü — aynı grup içinde
   const { data: mevcut } = await supabase
     .from('kullanicilar')
     .select('id, ad_soyad, gruplar(grup_adi)')
     .eq('tel_no', tel_no)
+    .eq('grup_id', grup_id)
     .eq('aktif', true)
     .maybeSingle()
 
@@ -151,12 +152,13 @@ export async function PATCH(req: NextRequest) {
 
   const supabase = await createClient()
 
-  // Telefon değişiyorsa tekrar kontrolü
+  // Telefon değişiyorsa tekrar kontrolü — aynı grup içinde
   if (tel_no) {
     const { data: mevcut } = await supabase
       .from('kullanicilar')
       .select('id, ad_soyad, gruplar(grup_adi)')
       .eq('tel_no', tel_no)
+      .eq('grup_id', grup_id)
       .eq('aktif', true)
       .neq('id', id)
       .maybeSingle()
