@@ -33,13 +33,13 @@ export async function GET(req: NextRequest) {
     .eq('grup_id', grup_id)
     .order('ad_soyad')
 
-  // Aktif dönem
+  // En son dönem (aktif olup olmadığına bakılmaksızın)
   const { data: donem } = await supabase
     .from('donemler')
     .select('id, tur_no')
     .eq('grup_id', grup_id)
-    .lte('baslangic_tarihi', bugun)
-    .gte('bitis_tarihi', bugun)
+    .order('tur_no', { ascending: false })
+    .limit(1)
     .maybeSingle()
 
   // Cüz atamaları
