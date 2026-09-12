@@ -70,15 +70,24 @@ export default function RotasyonPage() {
     }
   }
 
-  const yeniBitis = donemBilgi
+  const { yeniBasStr, yeniBitStr, araBasStr, araBitStr } = donemBilgi
     ? (() => {
-        const t = new Date(donemBilgi.donem.bitis_tarihi)
-        t.setDate(t.getDate() + 1)
-        const b = new Date(t)
-        b.setDate(b.getDate() + 29)
-        return `${tarihFormatla(t.toISOString())} – ${tarihFormatla(b.toISOString())}`
+        const araBas = new Date(donemBilgi.donem.bitis_tarihi)
+        araBas.setDate(araBas.getDate() + 1)
+        const araBit = new Date(donemBilgi.donem.bitis_tarihi)
+        araBit.setDate(araBit.getDate() + 15)
+        const yeniBas = new Date(donemBilgi.donem.bitis_tarihi)
+        yeniBas.setDate(yeniBas.getDate() + 16)
+        const yeniBit = new Date(yeniBas)
+        yeniBit.setDate(yeniBit.getDate() + 29)
+        return {
+          yeniBasStr: tarihFormatla(yeniBas.toISOString()),
+          yeniBitStr: tarihFormatla(yeniBit.toISOString()),
+          araBasStr: tarihFormatla(araBas.toISOString()),
+          araBitStr: tarihFormatla(araBit.toISOString()),
+        }
       })()
-    : ''
+    : { yeniBasStr: '', yeniBitStr: '', araBasStr: '', araBitStr: '' }
 
   return (
     <div className="py-4 max-w-lg space-y-4">
@@ -126,14 +135,19 @@ export default function RotasyonPage() {
             </div>
           </div>
 
-          <div className="text-sm text-slate-500 space-y-1">
+          <div className="text-sm text-slate-500 space-y-1.5">
             <p>
               <span className="text-slate-400">Mevcut dönem:</span>{' '}
               {tarihFormatla(donemBilgi.donem.baslangic_tarihi)} – {tarihFormatla(donemBilgi.donem.bitis_tarihi)}
             </p>
             <p>
-              <span className="text-slate-400">Yeni dönem:</span>{' '}
-              {yeniBitis}
+              <span className="text-amber-400">⏸ Ara:</span>{' '}
+              {araBasStr} – {araBitStr}
+              <span className="text-xs text-slate-400 ml-1">(15 gün)</span>
+            </p>
+            <p>
+              <span className="text-emerald-500">▶ Yeni dönem:</span>{' '}
+              {yeniBasStr} – {yeniBitStr}
             </p>
           </div>
 
