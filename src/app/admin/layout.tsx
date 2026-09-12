@@ -6,10 +6,9 @@ import { useEffect, useState } from 'react'
 import type { OturumKullanici } from '@/types'
 
 const MENU = [
-  { href: '/admin', label: 'Günlük Rapor' },
+  { href: '/admin/raporlar', label: 'Raporlar' },
   { href: '/admin/yonetim', label: 'Yönetim' },
   { href: '/admin/rotasyon', label: 'Tur Başlat' },
-  { href: '/admin/raporlar', label: 'Raporlar' },
   { href: '/admin/loglar', label: 'Giriş Logları' },
 ]
 
@@ -43,7 +42,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Yönetici</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-slate-500 hidden sm:block">{kullanici.ad_soyad}</span>
+          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{kullanici.ad_soyad}</span>
           <button onClick={cikis} className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1 rounded-full transition-colors">
             Çıkış
           </button>

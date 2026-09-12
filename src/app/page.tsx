@@ -3,15 +3,17 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-const VERSIYON = 'v1.43'
+const VERSIYON = 'v1.44'
 
 interface Grup { id: string; grup_adi: string }
 interface Uye { id: string; ad_soyad: string }
 type Adim = 'secim' | 'pin' | 'pin-ayarla' | 'yonetici'
+type GirisTipi = 'uye' | 'yonetici'
 
 export default function GirisPage() {
   const router = useRouter()
   const [adim, setAdim] = useState<Adim>('secim')
+  const [girisTipi, setGirisTipi] = useState<GirisTipi>('uye')
 
   // Grup + üye seçimi
   const [gruplar, setGruplar] = useState<Grup[]>([])
@@ -56,6 +58,13 @@ export default function GirisPage() {
       .then(r => r.json())
       .then(d => { setUyeler(d.uyeler ?? []); setSeciliUye('') })
   }, [seciliGrup])
+
+  const girisTipDegistir = (tip: GirisTipi) => {
+    setGirisTipi(tip)
+    setHata('')
+    if (tip === 'yonetici') setAdim('yonetici')
+    else setAdim('secim')
+  }
 
   const devam = () => {
     if (!seciliGrup || !seciliUye) { setHata('Grup ve adınızı seçin.'); return }
@@ -118,7 +127,7 @@ export default function GirisPage() {
   const uyeAdi = uyeler.find(u => u.id === seciliUye)?.ad_soyad ?? ''
 
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative">
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-4">
 
         {/* Başlık */}
@@ -129,6 +138,32 @@ export default function GirisPage() {
           <h1 className="text-2xl font-bold text-slate-800">Furkan Meclisi</h1>
           <p className="text-slate-400 text-sm">Hatim Takip</p>
         </div>
+
+        {/* Toggle: Üye / Yönetici */}
+        {(adim === 'secim' || adim === 'yonetici') && (
+          <div className="flex bg-slate-100 rounded-full p-1">
+            <button
+              onClick={() => girisTipDegistir('uye')}
+              className={`flex-1 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                girisTipi === 'uye'
+                  ? 'bg-white text-slate-800 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Üye
+            </button>
+            <button
+              onClick={() => girisTipDegistir('yonetici')}
+              className={`flex-1 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                girisTipi === 'yonetici'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Yönetici
+            </button>
+          </div>
+        )}
 
         {/* ADIM 1 — Grup + İsim */}
         {adim === 'secim' && (
@@ -158,10 +193,6 @@ export default function GirisPage() {
             <button onClick={devam} disabled={!seciliGrup || !seciliUye}
               className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-semibold py-3 rounded-xl transition-colors">
               Devam →
-            </button>
-            <button onClick={() => { setAdim('yonetici'); setHata('') }}
-              className="w-full text-xs text-blue-800 hover:text-blue-900 font-medium py-1">
-              Yönetici Girişi
             </button>
             <div className="flex justify-end">
               <span className="text-xs text-slate-400 select-none">{VERSIYON}</span>
@@ -248,11 +279,7 @@ export default function GirisPage() {
         {/* YÖNETİCİ GİRİŞİ */}
         {adim === 'yonetici' && (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <button onClick={() => { setAdim('secim'); setHata('') }}
-                className="text-slate-500 hover:text-slate-700 text-2xl font-bold w-10 h-10 flex items-center justify-center">←</button>
-              <h2 className="font-semibold text-slate-700">Yönetici Girişi</h2>
-            </div>
+            <h2 className="font-semibold text-slate-700 text-center">Yönetici Girişi</h2>
             <form onSubmit={yoneticiGiris} className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1">Telefon Numarası</label>
@@ -264,10 +291,13 @@ export default function GirisPage() {
               </div>
               {hata && <p className="text-sm text-red-500">{hata}</p>}
               <button type="submit" disabled={yukleniyor}
-                className="w-full bg-slate-700 hover:bg-slate-800 disabled:bg-slate-400 text-white font-semibold py-3 rounded-xl transition-colors">
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 rounded-xl transition-colors">
                 {yukleniyor ? 'Giriş yapılıyor...' : 'Giriş Yap'}
               </button>
             </form>
+            <div className="flex justify-end">
+              <span className="text-xs text-slate-400 select-none">{VERSIYON}</span>
+            </div>
           </div>
         )}
       </div>
