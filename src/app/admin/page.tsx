@@ -130,15 +130,20 @@ export default function AdminRaporPage() {
             </div>
           </div>
 
-          {/* Okumayan listesi */}
-          {okumayan.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-red-400" />
-                <h2 className="font-semibold text-slate-700 text-sm">
-                  Henüz Okumayan ({okumayan.length} kişi)
-                </h2>
+          {/* Okumayan listesi — her zaman göster */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-400" />
+              <h2 className="font-semibold text-slate-700 text-sm">
+                Henüz Okumayan ({okumayan.length} kişi)
+              </h2>
+            </div>
+            {okumayan.length === 0 ? (
+              <div className="px-4 py-6 text-center">
+                <p className="text-2xl mb-1">🎉</p>
+                <p className="text-sm font-medium text-emerald-600">Herkes bugün okudu!</p>
               </div>
+            ) : (
               <ul className="divide-y divide-slate-100">
                 {okumayan.map(u => (
                   <li key={u.id} className="flex items-center justify-between px-4 py-3">
@@ -160,19 +165,18 @@ export default function AdminRaporPage() {
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Okuyan listesi */}
+          {/* Okuyanlar — daraltılmış */}
           {okuyan.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+            <details className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <summary className="px-4 py-3 flex items-center gap-2 cursor-pointer hover:bg-slate-50 list-none">
                 <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                <h2 className="font-semibold text-slate-700 text-sm">
-                  Okuyanlar ({okuyan.length} kişi)
-                </h2>
-              </div>
-              <ul className="divide-y divide-slate-100">
+                <span className="text-sm font-semibold text-slate-700">Okuyanlar ({okuyan.length} kişi)</span>
+                <span className="ml-auto text-slate-400 text-xs">▼</span>
+              </summary>
+              <ul className="divide-y divide-slate-100 border-t border-slate-100">
                 {okuyan.map(u => (
                   <li key={u.id} className="flex items-center justify-between px-4 py-3">
                     <div>
@@ -183,7 +187,7 @@ export default function AdminRaporPage() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </details>
           )}
         </>
       )}
