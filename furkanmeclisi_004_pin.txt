@@ -1,0 +1,2 @@
+-- Supabase SQL Editor > + New query > Calistir
+ALTER TABLE kullanicilar ADD COLUMN IF NOT EXISTS pin TEXT;

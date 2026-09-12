@@ -3,103 +3,268 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-function telFormatla(deger: string) {
-  const rakamlar = deger.replace(/\D/g, '').slice(0, 11)
-  if (rakamlar.length <= 4) return rakamlar
-  if (rakamlar.length <= 7) return `${rakamlar.slice(0, 4)} ${rakamlar.slice(4)}`
-  if (rakamlar.length <= 9) return `${rakamlar.slice(0, 4)} ${rakamlar.slice(4, 7)} ${rakamlar.slice(7)}`
-  return `${rakamlar.slice(0, 4)} ${rakamlar.slice(4, 7)} ${rakamlar.slice(7, 9)} ${rakamlar.slice(9)}`
-}
+interface Grup { id: string; grup_adi: string }
+interface Uye { id: string; ad_soyad: string }
+type Adim = 'secim' | 'pin' | 'pin-ayarla' | 'yonetici'
 
 export default function GirisPage() {
-  const [tel, setTel] = useState('')
-  const [yukleniyor, setYukleniyor] = useState(false)
-  const [hata, setHata] = useState('')
   const router = useRouter()
+  const [adim, setAdim] = useState<Adim>('secim')
 
+  // Grup + üye seçimi
+  const [gruplar, setGruplar] = useState<Grup[]>([])
+  const [uyeler, setUyeler] = useState<Uye[]>([])
+  const [seciliGrup, setSeciliGrup] = useState('')
+  const [seciliUye, setSeciliUye] = useState('')
+
+  // PIN
+  const [pin, setPin] = useState('')
+  const [yeniPin, setYeniPin] = useState('')
+  const [yeniPinOnay, setYeniPinOnay] = useState('')
+  const [geciciKullanici, setGeciciKullanici] = useState<{
+    id: string; ad_soyad: string; grup_id: string; kullanici_tipi: string
+  } | null>(null)
+
+  // Yönetici
+  const [telNo, setTelNo] = useState('')
+
+  const [hata, setHata] = useState('')
+  const [yukleniyor, setYukleniyor] = useState(false)
+
+  // Oturum kontrolü
   useEffect(() => {
     const oturum = localStorage.getItem('fm_oturum')
     if (oturum) {
-      const kullanici = JSON.parse(oturum)
-      router.replace(kullanici.kullanici_tipi === 'Uye' ? '/bugun' : '/admin')
+      const u = JSON.parse(oturum)
+      router.replace(u.kullanici_tipi === 'Uye' ? '/bugun' : '/admin')
     }
   }, [router])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Grupları yükle
+  useEffect(() => {
+    fetch('/api/giris/gruplar')
+      .then(r => r.json())
+      .then(d => setGruplar(d.gruplar ?? []))
+  }, [])
+
+  // Üyeleri yükle
+  useEffect(() => {
+    if (!seciliGrup) { setUyeler([]); setSeciliUye(''); return }
+    fetch(`/api/giris/uyeler?grup_id=${seciliGrup}`)
+      .then(r => r.json())
+      .then(d => { setUyeler(d.uyeler ?? []); setSeciliUye('') })
+  }, [seciliGrup])
+
+  const devam = () => {
+    if (!seciliGrup || !seciliUye) { setHata('Grup ve adınızı seçin.'); return }
+    setHata(''); setAdim('pin')
+  }
+
+  const pinGir = async (e: React.FormEvent) => {
     e.preventDefault()
-    setHata('')
-    const telTemiz = tel.replace(/\D/g, '')
-    if (telTemiz.length < 10) {
-      setHata('Geçerli bir telefon numarası girin.')
-      return
-    }
-    setYukleniyor(true)
-    try {
-      const res = await fetch('/api/giris', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tel_no: telTemiz }),
-      })
-      const veri = await res.json()
-      if (!res.ok) {
-        setHata(veri.hata)
-        return
-      }
-      localStorage.setItem('fm_oturum', JSON.stringify(veri.kullanici))
-      router.push(veri.kullanici.kullanici_tipi === 'Uye' ? '/bugun' : '/admin')
-    } catch {
-      setHata('Bağlantı hatası. Lütfen tekrar deneyin.')
-    } finally {
-      setYukleniyor(false)
+    setHata(''); setYukleniyor(true)
+    const res = await fetch('/api/giris', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kullanici_id: seciliUye, pin }),
+    })
+    const d = await res.json()
+    setYukleniyor(false)
+    if (!res.ok) { setHata(d.hata); return }
+    if (d.ilk_giris) {
+      setGeciciKullanici(d.kullanici)
+      setPin(''); setAdim('pin-ayarla')
+    } else {
+      localStorage.setItem('fm_oturum', JSON.stringify(d.kullanici))
+      router.replace('/bugun')
     }
   }
 
-  return (
-    <main className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+  const pinAyarla = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setHata('')
+    if (yeniPin !== yeniPinOnay) { setHata('PIN kodları eşleşmiyor.'); return }
+    if (!/^\d{4}$/.test(yeniPin)) { setHata('PIN 4 haneli rakamdan oluşmalıdır.'); return }
+    setYukleniyor(true)
+    const res = await fetch('/api/pin-ayarla', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kullanici_id: geciciKullanici!.id, yeni_pin: yeniPin }),
+    })
+    const d = await res.json()
+    setYukleniyor(false)
+    if (!res.ok) { setHata(d.hata); return }
+    localStorage.setItem('fm_oturum', JSON.stringify(geciciKullanici))
+    router.replace('/bugun')
+  }
 
-        {/* Logo / Başlık */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-600 rounded-2xl mb-4">
+  const yoneticiGiris = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setHata(''); setYukleniyor(true)
+    const res = await fetch('/api/giris', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tel_no: telNo.replace(/\D/g, '') }),
+    })
+    const d = await res.json()
+    setYukleniyor(false)
+    if (!res.ok) { setHata(d.hata); return }
+    localStorage.setItem('fm_oturum', JSON.stringify(d.kullanici))
+    router.replace(d.kullanici.kullanici_tipi === 'Uye' ? '/bugun' : '/admin')
+  }
+
+  const uyeAdi = uyeler.find(u => u.id === seciliUye)?.ad_soyad ?? ''
+
+  return (
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm space-y-4">
+
+        {/* Başlık */}
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-600 rounded-2xl mb-3">
             <span className="text-3xl">📖</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-800">Furkan Meclisi</h1>
-          <p className="text-slate-500 mt-1 text-sm">Hatim Takip</p>
+          <p className="text-slate-400 text-sm">Hatim Takip</p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Telefon Numarası
-          </label>
-          <input
-            type="tel"
-            inputMode="numeric"
-            placeholder="05XX XXX XX XX"
-            value={tel}
-            onChange={e => setTel(telFormatla(e.target.value))}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-lg tracking-wider text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-            autoComplete="tel"
-          />
+        {/* ADIM 1 — Grup + İsim */}
+        {adim === 'secim' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+            <h2 className="font-semibold text-slate-700 text-center">Grubunuzu ve Adınızı Seçin</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Grup</label>
+                <select value={seciliGrup} onChange={e => setSeciliGrup(e.target.value)}
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <option value="">Grup seçin...</option>
+                  {gruplar.map(g => <option key={g.id} value={g.id}>{g.grup_adi}</option>)}
+                </select>
+              </div>
+              {uyeler.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Ad Soyad</label>
+                  <select value={seciliUye} onChange={e => setSeciliUye(e.target.value)}
+                    className="w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="">Adınızı seçin...</option>
+                    {uyeler.map(u => <option key={u.id} value={u.id}>{u.ad_soyad}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+            {hata && <p className="text-sm text-red-500 text-center">{hata}</p>}
+            <button onClick={devam} disabled={!seciliGrup || !seciliUye}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-semibold py-3 rounded-xl transition-colors">
+              Devam →
+            </button>
+            <button onClick={() => { setAdim('yonetici'); setHata('') }}
+              className="w-full text-xs text-slate-400 hover:text-slate-600 py-1">
+              Yönetici Girişi
+            </button>
+          </div>
+        )}
 
-          {hata && (
-            <p className="mt-3 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
-              {hata}
-            </p>
-          )}
+        {/* ADIM 2 — PIN */}
+        {adim === 'pin' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <button onClick={() => { setAdim('secim'); setPin(''); setHata('') }}
+                className="text-slate-400 hover:text-slate-600 text-lg">←</button>
+              <div>
+                <p className="font-semibold text-slate-700">PIN Kodu</p>
+                <p className="text-xs text-slate-400">{uyeAdi}</p>
+              </div>
+            </div>
+            <form onSubmit={pinGir} className="space-y-3">
+              <div>
+                <input
+                  type="text" inputMode="numeric" maxLength={4}
+                  value={pin}
+                  onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  placeholder="••••"
+                  required
+                  className="w-full border border-slate-300 rounded-xl px-4 py-4 text-slate-800 text-center text-3xl tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <p className="text-xs text-slate-400 mt-2 text-center leading-relaxed">
+                  İlk girişte: <span className="font-medium">(önceki tur no) + (cüz no)</span>
+                  <br />Örn: 47. tur, 1. cüz → <span className="font-mono font-medium">4601</span>
+                </p>
+              </div>
+              {hata && <p className="text-sm text-red-500 text-center">{hata}</p>}
+              <button type="submit" disabled={yukleniyor || pin.length < 4}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-semibold py-3 rounded-xl transition-colors">
+                {yukleniyor ? 'Kontrol ediliyor...' : 'Giriş Yap'}
+              </button>
+            </form>
+          </div>
+        )}
 
-          <button
-            type="submit"
-            disabled={yukleniyor}
-            className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-semibold py-3 rounded-xl transition-colors"
-          >
-            {yukleniyor ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-          </button>
-        </form>
+        {/* ADIM 3 — Kalıcı PIN Belirle (ilk giriş) */}
+        {adim === 'pin-ayarla' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+            <div className="text-center space-y-1">
+              <div className="text-2xl">🔐</div>
+              <h2 className="font-semibold text-slate-700">Kalıcı PIN Belirleyin</h2>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                <span className="font-medium">Doğum yılınızı</span> (örn: 1985)<br />
+                veya telefon numaranızın <span className="font-medium">son 4 rakamını</span> girin.
+              </p>
+            </div>
+            <form onSubmit={pinAyarla} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Yeni PIN</label>
+                <input
+                  type="text" inputMode="numeric" maxLength={4}
+                  value={yeniPin}
+                  onChange={e => setYeniPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  placeholder="••••" required
+                  className="w-full border border-slate-300 rounded-xl px-4 py-4 text-slate-800 text-center text-3xl tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">PIN Tekrar</label>
+                <input
+                  type="text" inputMode="numeric" maxLength={4}
+                  value={yeniPinOnay}
+                  onChange={e => setYeniPinOnay(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  placeholder="••••" required
+                  className="w-full border border-slate-300 rounded-xl px-4 py-4 text-slate-800 text-center text-3xl tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              {hata && <p className="text-sm text-red-500 text-center">{hata}</p>}
+              <button type="submit" disabled={yukleniyor || yeniPin.length < 4 || yeniPinOnay.length < 4}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-semibold py-3 rounded-xl transition-colors">
+                {yukleniyor ? 'Kaydediliyor...' : 'PIN Kaydet ve Giriş Yap'}
+              </button>
+            </form>
+          </div>
+        )}
 
-        <p className="text-center text-xs text-slate-400 mt-6">
-          Numaranız kayıtlı değilse yöneticinizle iletişime geçin.
-        </p>
+        {/* YÖNETİCİ GİRİŞİ */}
+        {adim === 'yonetici' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <button onClick={() => { setAdim('secim'); setHata('') }}
+                className="text-slate-400 hover:text-slate-600 text-lg">←</button>
+              <h2 className="font-semibold text-slate-700">Yönetici Girişi</h2>
+            </div>
+            <form onSubmit={yoneticiGiris} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Telefon Numarası</label>
+                <input type="tel" value={telNo}
+                  onChange={e => setTelNo(e.target.value)}
+                  placeholder="05XX XXX XX XX" required
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              {hata && <p className="text-sm text-red-500">{hata}</p>}
+              <button type="submit" disabled={yukleniyor}
+                className="w-full bg-slate-700 hover:bg-slate-800 disabled:bg-slate-400 text-white font-semibold py-3 rounded-xl transition-colors">
+                {yukleniyor ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+              </button>
+            </form>
+          </div>
+        )}
       </div>
     </main>
   )
