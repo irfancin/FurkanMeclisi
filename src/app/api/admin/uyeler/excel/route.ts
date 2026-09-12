@@ -16,6 +16,14 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const bugun = bugunTR()
 
+  // Grubun tipi
+  const { data: grup } = await supabase
+    .from('gruplar')
+    .select('grup_tipi')
+    .eq('id', grup_id)
+    .single()
+  const isHatim = (grup?.grup_tipi ?? 'Hatim') === 'Hatim'
+
   // Aktif dönem
   const { data: donem } = await supabase
     .from('donemler')
@@ -25,9 +33,9 @@ export async function POST(req: NextRequest) {
     .gte('bitis_tarihi', bugun)
     .maybeSingle()
 
-  // Mevcut cüz atamaları
+  // Mevcut cüz atamaları (Hatim grubuysa)
   let atananCuzler: number[] = []
-  if (donem) {
+  if (donem && isHatim) {
     const { data } = await supabase
       .from('donem_atamalari')
       .select('cuz_no')
@@ -64,8 +72,8 @@ export async function POST(req: NextRequest) {
 
     if (error || !yeni) { atlanan++; continue }
 
-    // Cüz ataması
-    if (donem) {
+    // Cüz ataması (yalnızca Hatim grubu)
+    if (donem && isHatim) {
       let cuz_no: number | null = null
       for (let i = 1; i <= 30; i++) {
         if (!atananSet.has(i)) { cuz_no = i; break }

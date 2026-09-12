@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import * as XLSX from 'xlsx'
 
-interface Grup { id: string; grup_adi: string }
+interface Grup { id: string; grup_adi: string; grup_tipi: 'Hatim' | 'Zikir' }
 interface Uye {
   id: string; ad_soyad: string; tel_no: string
   kullanici_tipi: string; aktif: boolean
@@ -25,6 +25,7 @@ export default function YonetimPage() {
     new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date())
   )
   const [yeniGrupTurNo, setYeniGrupTurNo] = useState('1')
+  const [yeniGrupTipi, setYeniGrupTipi] = useState<'Hatim' | 'Zikir'>('Hatim')
   const [grupKayit, setGrupKayit] = useState(false)
   const [grupMesaj, setGrupMesaj] = useState<{ tip: 'ok' | 'hata'; metin: string } | null>(null)
 
@@ -64,7 +65,7 @@ export default function YonetimPage() {
     const res = await fetch('/api/admin/gruplar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ grup_adi: yeniGrupAdi, baslangic_tarihi: yeniGrupTarih, tur_no: Number(yeniGrupTurNo) }),
+      body: JSON.stringify({ grup_adi: yeniGrupAdi, baslangic_tarihi: yeniGrupTarih, tur_no: Number(yeniGrupTurNo), grup_tipi: yeniGrupTipi }),
     })
     const d = await res.json()
     if (!res.ok) {
@@ -72,6 +73,7 @@ export default function YonetimPage() {
     } else {
       setGrupMesaj({ tip: 'ok', metin: `"${yeniGrupAdi}" grubu oluşturuldu.` })
       setYeniGrupAdi('')
+      setYeniGrupTipi('Hatim')
       await gruplariYukle()
     }
     setGrupKayit(false)
@@ -182,7 +184,14 @@ export default function YonetimPage() {
               : <ul className="divide-y divide-slate-100">
                   {gruplar.map(g => (
                     <li key={g.id} className="flex items-center justify-between px-4 py-3">
-                      <span className="text-sm font-medium text-slate-700">{g.grup_adi}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-slate-700">{g.grup_adi}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                          g.grup_tipi === 'Zikir'
+                            ? 'bg-violet-100 text-violet-700'
+                            : 'bg-emerald-50 text-emerald-700'
+                        }`}>{g.grup_tipi}</span>
+                      </div>
                       <button onClick={() => { setSeciliGrup(g.id); setSekme('uyeler') }}
                         className="text-xs text-emerald-600 hover:underline">Üyeleri gör →</button>
                     </li>
@@ -200,6 +209,27 @@ export default function YonetimPage() {
                 <input value={yeniGrupAdi} onChange={e => setYeniGrupAdi(e.target.value)}
                   placeholder="Hatim-2" required
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Grup Tipi</label>
+                <div className="flex gap-3">
+                  {(['Hatim', 'Zikir'] as const).map(tip => (
+                    <label key={tip} className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="grup_tipi"
+                        value={tip}
+                        checked={yeniGrupTipi === tip}
+                        onChange={() => setYeniGrupTipi(tip)}
+                        className="accent-emerald-600"
+                      />
+                      <span className="text-sm text-slate-700">{tip}</span>
+                    </label>
+                  ))}
+                </div>
+                {yeniGrupTipi === 'Zikir' && (
+                  <p className="text-xs text-violet-600 mt-1">Zikir gruplarında cüz numarası atanmaz ve tur bitiminde rotasyon yapılmaz.</p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -291,7 +321,16 @@ export default function YonetimPage() {
 
           {/* Excel import */}
           <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h2 className="font-semibold text-slate-700 mb-1">Excel ile Toplu Üye Ekle</h2>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="font-semibold text-slate-700">Excel ile Toplu Üye Ekle</h2>
+              <a
+                href="/api/admin/sablon"
+                download="uye_sablon.xlsx"
+                className="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition-colors"
+              >
+                ⬇ Şablon İndir
+              </a>
+            </div>
             <p className="text-xs text-slate-400 mb-3">
               Excel dosyasında <code className="bg-slate-100 px-1 rounded">ad_soyad</code> ve <code className="bg-slate-100 px-1 rounded">tel_no</code> sütunları olmalı.
             </p>

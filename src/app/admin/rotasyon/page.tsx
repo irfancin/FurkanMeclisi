@@ -10,6 +10,7 @@ interface DonemBilgi {
     bitis_tarihi: string
   }
   uye_sayisi: number
+  grup_tipi: 'Hatim' | 'Zikir'
 }
 
 function tarihFormatla(iso: string) {
@@ -149,6 +150,11 @@ export default function RotasyonPage() {
               <span className="text-emerald-500">▶ Yeni dönem:</span>{' '}
               {yeniBasStr} – {yeniBitStr}
             </p>
+            {donemBilgi.grup_tipi === 'Zikir' && (
+              <p className="text-xs bg-violet-50 text-violet-700 rounded-lg px-3 py-2 mt-1">
+                Bu bir Zikir grubudur — cüz numarası rotasyonu yapılmaz.
+              </p>
+            )}
           </div>
 
           <button
@@ -173,7 +179,9 @@ export default function RotasyonPage() {
                 <strong>{donemBilgi.donem.tur_no + 1}. Tur</strong> açılacak.
               </p>
               <p className="text-sm text-slate-500 mt-1">
-                {donemBilgi.uye_sayisi} üyenin cüz numarası 1 artırılacak (30 → 1).
+                {donemBilgi.grup_tipi === 'Hatim'
+                  ? `${donemBilgi.uye_sayisi} üyenin cüz numarası 1 artırılacak (30 → 1).`
+                  : `${donemBilgi.uye_sayisi} üye için yeni dönem açılacak (cüz rotasyonu yok).`}
               </p>
             </div>
           </div>

@@ -9,6 +9,13 @@ export async function GET(req: NextRequest) {
 
   const supabase = await createClient()
 
+  // Grubun tipi
+  const { data: grup } = await supabase
+    .from('gruplar')
+    .select('grup_tipi')
+    .eq('id', grup_id)
+    .single()
+
   // Grubun en son dönemi
   const { data: donem } = await supabase
     .from('donemler')
@@ -28,7 +35,11 @@ export async function GET(req: NextRequest) {
     .eq('aktif', true)
     .eq('kullanici_tipi', 'Uye')
 
-  return NextResponse.json({ donem, uye_sayisi: uye_sayisi ?? 0 })
+  return NextResponse.json({
+    donem,
+    uye_sayisi: uye_sayisi ?? 0,
+    grup_tipi: grup?.grup_tipi ?? 'Hatim',
+  })
 }
 
 // Yeni tur başlat
@@ -37,6 +48,15 @@ export async function POST(req: NextRequest) {
   if (!grup_id) return NextResponse.json({ hata: 'Eksik parametre.' }, { status: 400 })
 
   const supabase = await createClient()
+
+  // Grubun tipi
+  const { data: grup } = await supabase
+    .from('gruplar')
+    .select('grup_tipi')
+    .eq('id', grup_id)
+    .single()
+
+  const isHatim = (grup?.grup_tipi ?? 'Hatim') === 'Hatim'
 
   // Son dönemi bul
   const { data: sonDonem } = await supabase
@@ -70,7 +90,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ hata: 'Yeni dönem oluşturulamadı.' }, { status: 500 })
   }
 
-  // Aktif üyeler + eski cüz atamaları
+  // Aktif üyeler
   const { data: uyeler } = await supabase
     .from('kullanicilar')
     .select('id')
@@ -82,6 +102,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ basarili: true, yeni_tur_no, atanan: 0 })
   }
 
+  // Zikir grubu: cüz rotasyonu yapma
+  if (!isHatim) {
+    return NextResponse.json({ basarili: true, yeni_tur_no, atanan: 0 })
+  }
+
+  // Hatim grubu: cüz numarasını +1 kaydır (30 → 1)
   const uye_idler = uyeler.map(u => u.id)
 
   const { data: eskiAtamalar } = await supabase
@@ -92,7 +118,6 @@ export async function POST(req: NextRequest) {
 
   const eskiMap = new Map((eskiAtamalar ?? []).map(a => [a.kullanici_id, a.cuz_no]))
 
-  // Cüz numarasını +1 kaydır (30 → 1)
   const yeniAtamalar = uye_idler.map(uid => ({
     kullanici_id: uid,
     donem_id: yeniDonem.id,

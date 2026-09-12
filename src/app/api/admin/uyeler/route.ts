@@ -96,25 +96,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ hata: 'Üye eklenemedi.' }, { status: 500 })
   }
 
-  // Aktif dönemde cüz ataması yap (yalnızca Uye için)
+  // Aktif dönemde cüz ataması yap (yalnızca Hatim grubundaki Uye için)
   if (kullanici_tipi === 'Uye') {
-    const bugun = bugunTR()
-    const { data: donem } = await supabase
-      .from('donemler')
-      .select('id')
-      .eq('grup_id', grup_id)
-      .lte('baslangic_tarihi', bugun)
-      .gte('bitis_tarihi', bugun)
-      .maybeSingle()
+    const { data: grup } = await supabase
+      .from('gruplar')
+      .select('grup_tipi')
+      .eq('id', grup_id)
+      .single()
 
-    if (donem) {
-      const cuz_no = await musaitCuzBul(supabase, donem.id)
-      if (cuz_no) {
-        await supabase.from('donem_atamalari').insert({
-          kullanici_id: yeniUye.id,
-          donem_id: donem.id,
-          cuz_no,
-        })
+    if ((grup?.grup_tipi ?? 'Hatim') === 'Hatim') {
+      const bugun = bugunTR()
+      const { data: donem } = await supabase
+        .from('donemler')
+        .select('id')
+        .eq('grup_id', grup_id)
+        .lte('baslangic_tarihi', bugun)
+        .gte('bitis_tarihi', bugun)
+        .maybeSingle()
+
+      if (donem) {
+        const cuz_no = await musaitCuzBul(supabase, donem.id)
+        if (cuz_no) {
+          await supabase.from('donem_atamalari').insert({
+            kullanici_id: yeniUye.id,
+            donem_id: donem.id,
+            cuz_no,
+          })
+        }
       }
     }
   }

@@ -1,8 +1,11 @@
 export type KullaniciTipi = 'Uye' | 'Yonetici' | 'Sistem Bakim'
 
+export type GrupTipi = 'Hatim' | 'Zikir'
+
 export interface Grup {
   id: string
   grup_adi: string
+  grup_tipi: GrupTipi
   created_at: string
 }
 

@@ -1,0 +1,6 @@
+-- Supabase SQL Editor'de calistirin
+-- Sol menu: SQL Editor > + New query
+
+ALTER TABLE gruplar
+  ADD COLUMN IF NOT EXISTS grup_tipi TEXT NOT NULL DEFAULT 'Hatim'
+    CHECK (grup_tipi IN ('Hatim', 'Zikir'));

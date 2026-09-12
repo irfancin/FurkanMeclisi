@@ -6,7 +6,7 @@ export async function GET() {
 
   const { data: gruplar, error } = await supabase
     .from('gruplar')
-    .select('id, grup_adi')
+    .select('id, grup_adi, grup_tipi')
     .order('grup_adi')
 
   if (error) {
@@ -17,10 +17,14 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { grup_adi, baslangic_tarihi, tur_no = 1 } = await req.json()
+  const { grup_adi, baslangic_tarihi, tur_no = 1, grup_tipi = 'Hatim' } = await req.json()
 
   if (!grup_adi || !baslangic_tarihi) {
     return NextResponse.json({ hata: 'Grup adı ve başlangıç tarihi gerekli.' }, { status: 400 })
+  }
+
+  if (!['Hatim', 'Zikir'].includes(grup_tipi)) {
+    return NextResponse.json({ hata: 'Geçersiz grup tipi.' }, { status: 400 })
   }
 
   const supabase = await createClient()
@@ -28,7 +32,7 @@ export async function POST(req: NextRequest) {
   // Grup oluştur
   const { data: grup, error: grupHata } = await supabase
     .from('gruplar')
-    .insert({ grup_adi })
+    .insert({ grup_adi, grup_tipi })
     .select('id')
     .single()
 
