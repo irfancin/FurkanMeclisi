@@ -28,6 +28,8 @@ export default function YonetimPage() {
   const [yeniGrupTipi, setYeniGrupTipi] = useState<'Hatim' | 'Zikir'>('Hatim')
   const [grupKayit, setGrupKayit] = useState(false)
   const [grupMesaj, setGrupMesaj] = useState<{ tip: 'ok' | 'hata'; metin: string } | null>(null)
+  const [tohum, setTohum] = useState(false)
+  const [tohumSonuc, setTohumSonuc] = useState<{ toplamKayit: number; sonuclar: { grup: string; gun: number; uye: number; eklenen: number }[] } | null>(null)
 
   // Üye formu
   const [uyeForm, setUyeForm] = useState({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye' })
@@ -154,6 +156,15 @@ export default function YonetimPage() {
     if (dosyaRef.current) dosyaRef.current.value = ''
   }
 
+  const tohumOlustur = async () => {
+    if (!confirm('Tüm grupların son dönemindeki her üye için her güne okuma kaydı oluşturulacak. Devam?')) return
+    setTohum(true); setTohumSonuc(null)
+    const res = await fetch('/api/admin/tohum', { method: 'POST' })
+    const d = await res.json()
+    if (res.ok) setTohumSonuc(d)
+    setTohum(false)
+  }
+
   const aktifUyeler = uyeler.filter(u => u.aktif)
   const pasifUyeler = uyeler.filter(u => !u.aktif)
 
@@ -198,6 +209,34 @@ export default function YonetimPage() {
                   ))}
                 </ul>
             }
+          </div>
+
+          {/* Okuma verisi oluştur (ilk kurulum için) */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-amber-800">İlk Kurulum — Okuma Verisi Oluştur</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Tüm grupların son dönemi için her üyeye tüm günler okundu olarak işaretlenir.
+                Grupları ve üyeleri ekledikten sonra kullanın.
+              </p>
+            </div>
+            <button
+              onClick={tohumOlustur}
+              disabled={tohum || gruplar.length === 0}
+              className="bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              {tohum ? 'Oluşturuluyor...' : 'Tüm Okuma Kayıtlarını Oluştur'}
+            </button>
+            {tohumSonuc && (
+              <div className="text-xs space-y-1">
+                <p className="font-semibold text-amber-900">Toplam {tohumSonuc.toplamKayit.toLocaleString('tr-TR')} kayıt oluşturuldu:</p>
+                {tohumSonuc.sonuclar.map(s => (
+                  <p key={s.grup} className="text-amber-700">
+                    • {s.grup}: {s.uye} üye × {s.gun} gün = {s.eklenen} kayıt
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Yeni grup formu */}

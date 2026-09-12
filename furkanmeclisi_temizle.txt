@@ -1,0 +1,9 @@
+-- Tüm test verilerini siler (sıra önemli — foreign key ihlali olmasin)
+-- Supabase SQL Editor > + New query > Calistir
+
+DELETE FROM giris_loglari;
+DELETE FROM okuma_kayitlari;
+DELETE FROM donem_atamalari;
+DELETE FROM donemler;
+DELETE FROM kullanicilar;
+DELETE FROM gruplar;
