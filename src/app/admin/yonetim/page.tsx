@@ -384,7 +384,7 @@ export default function YonetimPage() {
                             <p className="text-sm font-medium text-slate-700">{u.ad_soyad}</p>
                             <p className="text-xs text-slate-400">
                               {u.tel_no}
-                              {u.cuz_no ? ` · ${u.cuz_no}. Cüz` : ''}
+                              {u.cuz_no ? <span className="text-emerald-600 font-medium"> · {u.cuz_no}. Cüz</span> : ''}
                               {u.kullanici_tipi !== 'Uye' ? ` · ${u.kullanici_tipi}` : ''}
                             </p>
                           </div>
