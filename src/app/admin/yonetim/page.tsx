@@ -379,16 +379,13 @@ export default function YonetimPage() {
                 : <>
                     <ul className="divide-y divide-slate-100">
                       {gosterilecekUyeler.map(u => (
-                        <li key={u.id} className="flex items-center justify-between px-4 py-3">
-                          <div>
-                            <p className="text-sm font-medium text-slate-700">{u.ad_soyad}</p>
-                            <p className="text-xs text-slate-400">
-                              {u.tel_no}
-                              {u.cuz_no ? <span className="text-emerald-600 font-medium"> · {u.cuz_no}. Cüz</span> : ''}
-                              {u.kullanici_tipi !== 'Uye' ? ` · ${u.kullanici_tipi}` : ''}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
+                        <li key={u.id} className="flex items-center gap-2 px-4 py-2">
+                          <span className="text-sm font-medium text-slate-700 w-32 shrink-0 truncate">{u.ad_soyad}</span>
+                          <span className="text-xs text-slate-400 w-28 shrink-0">{u.tel_no}</span>
+                          <span className="text-xs text-emerald-600 font-medium flex-1">
+                            {u.cuz_no ? `${u.cuz_no}. Cüz` : '—'}
+                          </span>
+                          <div className="flex gap-2 shrink-0">
                             <button onClick={() => duzenlemeBasla(u)}
                               className="text-xs text-blue-600 hover:underline">Düzenle</button>
                             <button onClick={() => uyeSil(u)}
