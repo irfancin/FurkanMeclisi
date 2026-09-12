@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-const VERSIYON = 'v1.40'
+const VERSIYON = 'v1.41'
 
 interface Grup { id: string; grup_adi: string }
 interface Uye { id: string; ad_soyad: string }

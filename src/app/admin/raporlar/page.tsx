@@ -167,13 +167,13 @@ export default function RaporlarPage() {
 
           {matris && ozetGoster && (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <table className="w-full text-sm">
+              <table className="w-full text-xs">
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
-                    <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500">Üye</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-medium text-slate-500">Cüz</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-medium text-slate-500">Okuma</th>
-                    <th className="px-4 py-2.5 text-center text-xs font-medium text-slate-500">Oran</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-500">Üye</th>
+                    <th className="px-3 py-2 text-center font-medium text-slate-500">Cüz</th>
+                    <th className="px-3 py-2 text-center font-medium text-slate-500">Okunan Gün</th>
+                    <th className="px-4 py-2 text-center font-medium text-slate-500">Oran</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -181,11 +181,11 @@ export default function RaporlarPage() {
                     const oran = Math.round((s.toplam / matris.gunler.length) * 100)
                     return (
                       <tr key={s.kullanici_id} className="hover:bg-slate-50">
-                        <td className="px-4 py-2.5 font-medium text-slate-700 text-sm">{s.ad_soyad}</td>
-                        <td className="px-3 py-2.5 text-center text-emerald-600 font-medium text-sm">{s.cuz_no ?? '—'}</td>
-                        <td className="px-3 py-2.5 text-center text-slate-600 text-sm">{s.toplam} gün</td>
-                        <td className="px-4 py-2.5 text-center">
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${oran >= 80 ? 'bg-emerald-100 text-emerald-700' : oran >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>
+                        <td className="px-4 py-2 font-medium text-slate-700">{s.ad_soyad}</td>
+                        <td className="px-3 py-2 text-center text-emerald-600 font-medium">{s.cuz_no ?? '—'}</td>
+                        <td className="px-3 py-2 text-center text-slate-600">{s.toplam}</td>
+                        <td className="px-4 py-2 text-center">
+                          <span className={`font-semibold px-2 py-0.5 rounded-full ${oran >= 80 ? 'bg-emerald-100 text-emerald-700' : oran >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>
                             %{oran}
                           </span>
                         </td>

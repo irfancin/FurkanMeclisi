@@ -101,7 +101,7 @@ export default function BugunPage() {
             <p className="text-xs text-slate-400 uppercase tracking-wide">Hoş geldin</p>
             <p className="font-semibold text-slate-700">{kullanici?.ad_soyad}</p>
           </div>
-          <button onClick={cikis} className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1">
+          <button onClick={cikis} className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1 rounded-full transition-colors">
             Çıkış
           </button>
         </div>
