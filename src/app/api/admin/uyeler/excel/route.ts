@@ -61,17 +61,17 @@ export async function POST(req: NextRequest) {
     }
     excelTelSet.add(tel)
 
-    // DB'de kayıtlı mı?
+    // DB'de kayıtlı mı? (aktif veya pasif — tel_no unique constraint herkese geçerli)
     const { data: mevcut } = await supabase
       .from('kullanicilar')
-      .select('id, ad_soyad, gruplar(grup_adi)')
+      .select('id, ad_soyad, aktif, gruplar(grup_adi)')
       .eq('tel_no', tel)
-      .eq('aktif', true)
       .maybeSingle()
 
     if (mevcut) {
       const grupAdi = (mevcut as { gruplar?: { grup_adi?: string } }).gruplar?.grup_adi ?? 'başka grupta'
-      atlanenlar.push({ ad, sebep: `Zaten kayıtlı — ${grupAdi}` }); continue
+      const durum = (mevcut as { aktif: boolean }).aktif ? '' : ' (pasif kayıt)'
+      atlanenlar.push({ ad, sebep: `Zaten kayıtlı — ${grupAdi}${durum}` }); continue
     }
 
     // Üye ekle
@@ -81,7 +81,9 @@ export async function POST(req: NextRequest) {
       .select('id')
       .single()
 
-    if (error || !yeni) { atlanenlar.push({ ad, sebep: 'Veritabanı hatası' }); continue }
+    if (error || !yeni) {
+      atlanenlar.push({ ad, sebep: error?.message ?? 'Veritabanı hatası' }); continue
+    }
 
     // Cüz ataması (yalnızca Hatim grubu)
     if (donem && isHatim) {
