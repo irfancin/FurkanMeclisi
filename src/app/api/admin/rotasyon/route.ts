@@ -69,9 +69,9 @@ export async function POST(req: NextRequest) {
 
   if (!sonDonem) return NextResponse.json({ hata: 'Dönem bulunamadı.' }, { status: 404 })
 
-  // Yeni dönem tarihleri: bir önceki bitiş + 16 gün (15 gün ara + 1)
+  // Yeni dönem tarihleri: bir önceki bitiş + 15 gün
   const yeniBas = new Date(sonDonem.bitis_tarihi)
-  yeniBas.setDate(yeniBas.getDate() + 16)
+  yeniBas.setDate(yeniBas.getDate() + 15)
   const yeniBit = new Date(yeniBas)
   yeniBit.setDate(yeniBit.getDate() + 29)
 

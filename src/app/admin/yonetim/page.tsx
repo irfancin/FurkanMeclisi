@@ -424,19 +424,33 @@ export default function YonetimPage() {
               {aktifUyeler.length === 0
                 ? <p className="px-4 py-6 text-sm text-slate-400 text-center">Henüz üye yok.</p>
                 : <>
+                    {/* Kolon başlıkları */}
+                    <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-50 border-b border-slate-100">
+                      <span className="text-xs font-medium text-slate-400 flex-1">Ad Soyad</span>
+                      <span className="text-xs font-medium text-slate-400 w-8 text-center">Cüz</span>
+                      <span className="w-14 shrink-0" />
+                    </div>
                     <ul className="divide-y divide-slate-100">
                       {gosterilecekUyeler.map(u => (
-                        <li key={u.id} className="flex items-center gap-2 px-4 py-2">
-                          <span className="text-sm font-medium text-slate-700 w-32 shrink-0 truncate">{u.ad_soyad}</span>
-                          <span className="text-xs text-slate-400 w-28 shrink-0">{u.tel_no}</span>
-                          <span className="text-xs text-emerald-600 font-medium flex-1">
-                            {u.cuz_no ? `${u.cuz_no}. Cüz` : '—'}
-                          </span>
-                          <div className="flex gap-2 shrink-0">
-                            <button onClick={() => duzenlemeBasla(u)}
-                              className="text-xs text-blue-600 hover:underline">Düzenle</button>
-                            <button onClick={() => uyeSil(u)}
-                              className="text-xs text-red-500 hover:underline">Sil</button>
+                        <li key={u.id} className="px-4 py-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-700 truncate">{u.ad_soyad}</p>
+                              <p className="text-xs text-slate-400">{u.tel_no}</p>
+                            </div>
+                            <span className="text-sm font-semibold text-emerald-600 w-8 text-center shrink-0">
+                              {u.cuz_no ?? '—'}
+                            </span>
+                            <div className="flex gap-1 shrink-0 w-14 justify-end">
+                              <button onClick={() => duzenlemeBasla(u)}
+                                className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Düzenle">
+                                ✏️
+                              </button>
+                              <button onClick={() => uyeSil(u)}
+                                className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors" title="Sil">
+                                🗑️
+                              </button>
+                            </div>
                           </div>
                         </li>
                       ))}

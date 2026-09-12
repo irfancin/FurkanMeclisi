@@ -76,9 +76,9 @@ export default function RotasyonPage() {
         const araBas = new Date(donemBilgi.donem.bitis_tarihi)
         araBas.setDate(araBas.getDate() + 1)
         const araBit = new Date(donemBilgi.donem.bitis_tarihi)
-        araBit.setDate(araBit.getDate() + 15)
+        araBit.setDate(araBit.getDate() + 14)
         const yeniBas = new Date(donemBilgi.donem.bitis_tarihi)
-        yeniBas.setDate(yeniBas.getDate() + 16)
+        yeniBas.setDate(yeniBas.getDate() + 15)
         const yeniBit = new Date(yeniBas)
         yeniBit.setDate(yeniBit.getDate() + 29)
         return {
