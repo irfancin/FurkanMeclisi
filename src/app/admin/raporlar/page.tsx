@@ -43,18 +43,19 @@ export default function RaporlarPage() {
     fetch('/api/admin/raporlar?tip=kpi').then(r => r.json()).then(setKpi)
   }, [])
 
-  // Grup değişince dönemleri yükle
+  // Grup değişince dönem listesini ve geçmiş turları yükle
   useEffect(() => {
     if (!seciliGrup) return
-    fetch(`/api/admin/raporlar?tip=turlar&grup_id=${seciliGrup}`)
+    // Matris dropdown için tüm dönemler
+    fetch(`/api/admin/raporlar?tip=donemler&grup_id=${seciliGrup}`)
       .then(r => r.json()).then(d => {
-        const liste: Tur[] = d.turlar ?? []
-        setTurlar(liste)
-        // Dönem seçici için
-        const donemListe = liste.map(t => ({ id: t.id, tur_no: t.tur_no, baslangic_tarihi: t.baslangic_tarihi, bitis_tarihi: t.bitis_tarihi }))
-        setDonemler(donemListe)
-        if (donemListe.length) setSeciliDonem(donemListe[0].id)
+        const liste: Donem[] = d.donemler ?? []
+        setDonemler(liste)
+        if (liste.length) setSeciliDonem(liste[0].id)
       })
+    // Geçmiş turlar sekmesi için
+    fetch(`/api/admin/raporlar?tip=turlar&grup_id=${seciliGrup}`)
+      .then(r => r.json()).then(d => setTurlar(d.turlar ?? []))
   }, [seciliGrup])
 
   const matrisYukle = useCallback(async () => {

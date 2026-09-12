@@ -142,6 +142,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ donem, gunler, satirlar })
   }
 
+  // --- TÜM DÖNEMLER (matris dropdown için) ---
+  if (tip === 'donemler' && grup_id) {
+    const { data: donemler } = await supabase
+      .from('donemler')
+      .select('id, tur_no, baslangic_tarihi, bitis_tarihi')
+      .eq('grup_id', grup_id)
+      .order('tur_no', { ascending: false })
+    return NextResponse.json({ donemler: donemler ?? [] })
+  }
+
   // --- TAMAMLANAN TURLAR ---
   if (tip === 'turlar' && grup_id) {
     const { data: donemler } = await supabase
