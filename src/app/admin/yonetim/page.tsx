@@ -47,6 +47,8 @@ export default function YonetimPage() {
   const [duzenleId, setDuzenleId] = useState<string | null>(null)
   const [uyeMesaj, setUyeMesaj] = useState<{ tip: 'ok' | 'hata'; metin: string } | null>(null)
   const [uyeKayit, setUyeKayit] = useState(false)
+  const [uyeFormAcik, setUyeFormAcik] = useState(false)
+  const [excelAcik, setExcelAcik] = useState(false)
 
   // Excel
   const [excelSonuc, setExcelSonuc] = useState<{
@@ -134,6 +136,7 @@ export default function YonetimPage() {
     setDuzenleId(u.id)
     setUyeForm({ ad_soyad: u.ad_soyad, tel_no: u.tel_no, kullanici_tipi: u.kullanici_tipi, cuz_no: String(u.cuz_no ?? '') })
     setUyeMesaj(null)
+    setUyeFormAcik(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -359,151 +362,7 @@ export default function YonetimPage() {
             </select>
           </div>
 
-          {/* Üye formu */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h2 className="font-semibold text-slate-700 mb-4">
-              {duzenleId ? 'Üyeyi Düzenle' : 'Yeni Üye Ekle'}
-            </h2>
-            <form onSubmit={uyeKaydet} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Ad Soyad</label>
-                  <input value={uyeForm.ad_soyad} onChange={e => setUyeForm(f => ({ ...f, ad_soyad: e.target.value }))}
-                    placeholder="Ahmet Yılmaz" required
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Telefon No</label>
-                  <input value={uyeForm.tel_no} onChange={e => setUyeForm(f => ({ ...f, tel_no: e.target.value }))}
-                    placeholder="05XXXXXXXXX" required
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-                </div>
-              </div>
-              {!duzenleId && gruplar.find(g => g.id === seciliGrup)?.grup_tipi === 'Hatim' && (
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">
-                    Cüz No <span className="text-slate-400 font-normal">(1–30, boş bırakılırsa otomatik atanır)</span>
-                  </label>
-                  <input
-                    type="number" min="1" max="30"
-                    value={uyeForm.cuz_no}
-                    onChange={e => setUyeForm(f => ({ ...f, cuz_no: e.target.value }))}
-                    placeholder="Otomatik"
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-              )}
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Kullanıcı Tipi</label>
-                <select value={uyeForm.kullanici_tipi} onChange={e => setUyeForm(f => ({ ...f, kullanici_tipi: e.target.value }))}
-                  className="border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                  <option value="Uye">Üye</option>
-                  <option value="Yonetici">Yönetici</option>
-                </select>
-              </div>
-              {uyeMesaj && (
-                <p className={`text-sm px-3 py-2 rounded-lg ${uyeMesaj.tip === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-                  {uyeMesaj.metin}
-                </p>
-              )}
-              <div className="flex gap-2">
-                <button type="submit" disabled={uyeKayit}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
-                  {uyeKayit ? 'Kaydediliyor...' : duzenleId ? 'Güncelle' : 'Üye Ekle'}
-                </button>
-                {duzenleId && (
-                  <button type="button" onClick={() => { setDuzenleId(null); setUyeForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' }); setUyeMesaj(null) }}
-                    className="px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
-                    İptal
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-
-          {/* Excel import */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-slate-700">Excel ile Toplu Üye Ekle</h2>
-              <a href="/api/admin/sablon" download="uye_sablon.xlsx"
-                className="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition-colors">
-                ⬇ Şablon İndir
-              </a>
-            </div>
-            <p className="text-xs text-slate-400">
-              Sütunlar: <code className="bg-slate-100 px-1 rounded">ad_soyad</code> · <code className="bg-slate-100 px-1 rounded">tel_no</code> · <code className="bg-slate-100 px-1 rounded">cuz_no</code>
-            </p>
-
-            {/* Dosya seç */}
-            <label className="flex items-center gap-3 border-2 border-dashed border-slate-200 hover:border-emerald-400 rounded-xl px-4 py-3 cursor-pointer transition-colors">
-              <span className="text-xl">📂</span>
-              <div className="flex-1 min-w-0">
-                {seciliDosya
-                  ? <p className="text-sm font-medium text-slate-700 truncate">{seciliDosya.name}</p>
-                  : <p className="text-sm text-slate-400">Dosya seçmek için tıklayın (.xlsx)</p>
-                }
-              </div>
-              <input ref={dosyaRef} type="file" accept=".xlsx,.xls,.csv"
-                onChange={dosyaSec} className="hidden" />
-            </label>
-
-            {/* Yükle butonu */}
-            {seciliDosya && !excelYukleniyor && !excelSonuc && (
-              <button onClick={excelYukle}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
-                Yükle — {seciliDosya.name}
-              </button>
-            )}
-
-            {/* Yükleniyor */}
-            {excelYukleniyor && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-slate-500">
-                  <span>Yükleniyor...</span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                  <div className="h-2 bg-emerald-500 rounded-full animate-pulse w-full" />
-                </div>
-              </div>
-            )}
-
-            {/* Sonuç */}
-            {excelSonuc && (
-              <div className="space-y-2">
-                <div className="flex gap-3">
-                  <div className="flex-1 bg-emerald-50 rounded-lg px-3 py-2 text-center">
-                    <p className="text-xl font-bold text-emerald-700">{excelSonuc.eklenen}</p>
-                    <p className="text-xs text-emerald-600">Eklendi</p>
-                  </div>
-                  <div className="flex-1 bg-amber-50 rounded-lg px-3 py-2 text-center">
-                    <p className="text-xl font-bold text-amber-600">{excelSonuc.atlanan}</p>
-                    <p className="text-xs text-amber-500">Atlandı</p>
-                  </div>
-                </div>
-                {excelSonuc.atlanenlar.length > 0 && (
-                  <details className="text-xs">
-                    <summary className="text-slate-500 cursor-pointer hover:text-slate-700">
-                      Atlanan kayıtları göster ({excelSonuc.atlanan})
-                    </summary>
-                    <ul className="mt-2 space-y-1 max-h-48 overflow-y-auto">
-                      {excelSonuc.atlanenlar.map((a, i) => (
-                        <li key={i} className="flex justify-between bg-slate-50 rounded px-2 py-1">
-                          <span className="font-medium text-slate-700">{a.ad}</span>
-                          <span className="text-amber-600 ml-2">{a.sebep}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                )}
-                <button onClick={() => { setExcelSonuc(null); setSeciliDosya(null) }}
-                  className="w-full text-xs text-slate-400 hover:text-slate-600 py-1">
-                  Yeni dosya yükle
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Üye listesi */}
+          {/* Üye listesi — grup seçiminin hemen altında */}
           {yukleniyor
             ? <p className="text-slate-400 text-sm">Yükleniyor...</p>
             : (
@@ -553,6 +412,162 @@ export default function YonetimPage() {
               )}
             </div>
           )}
+
+          {/* Üye formu — katlanabilir */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => { setUyeFormAcik(a => !a); if (duzenleId) { setDuzenleId(null); setUyeForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' }); setUyeMesaj(null) } }}
+              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50 transition-colors"
+            >
+              <span className="font-semibold text-slate-700">
+                {duzenleId ? 'Üyeyi Düzenle' : 'Yeni Üye Ekle'}
+              </span>
+              <span className={`text-slate-400 text-lg transition-transform duration-200 ${uyeFormAcik ? 'rotate-180' : ''}`}>⌄</span>
+            </button>
+            {uyeFormAcik && (
+              <div className="px-5 pb-5 border-t border-slate-100">
+                <form onSubmit={uyeKaydet} className="space-y-3 pt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Ad Soyad</label>
+                      <input value={uyeForm.ad_soyad} onChange={e => setUyeForm(f => ({ ...f, ad_soyad: e.target.value }))}
+                        placeholder="Ahmet Yılmaz" required
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Telefon No</label>
+                      <input value={uyeForm.tel_no} onChange={e => setUyeForm(f => ({ ...f, tel_no: e.target.value }))}
+                        placeholder="05XXXXXXXXX" required
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                  </div>
+                  {!duzenleId && gruplar.find(g => g.id === seciliGrup)?.grup_tipi === 'Hatim' && (
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">
+                        Cüz No <span className="text-slate-400 font-normal">(1–30, boş bırakılırsa otomatik atanır)</span>
+                      </label>
+                      <input
+                        type="number" min="1" max="30"
+                        value={uyeForm.cuz_no}
+                        onChange={e => setUyeForm(f => ({ ...f, cuz_no: e.target.value }))}
+                        placeholder="Otomatik"
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Kullanıcı Tipi</label>
+                    <select value={uyeForm.kullanici_tipi} onChange={e => setUyeForm(f => ({ ...f, kullanici_tipi: e.target.value }))}
+                      className="border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      <option value="Uye">Üye</option>
+                      <option value="Yonetici">Yönetici</option>
+                    </select>
+                  </div>
+                  {uyeMesaj && (
+                    <p className={`text-sm px-3 py-2 rounded-lg ${uyeMesaj.tip === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                      {uyeMesaj.metin}
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <button type="submit" disabled={uyeKayit}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
+                      {uyeKayit ? 'Kaydediliyor...' : duzenleId ? 'Güncelle' : 'Üye Ekle'}
+                    </button>
+                    {duzenleId && (
+                      <button type="button" onClick={() => { setDuzenleId(null); setUyeForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' }); setUyeMesaj(null) }}
+                        className="px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                        İptal
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+
+          {/* Excel import — katlanabilir */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setExcelAcik(a => !a)}
+              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50 transition-colors"
+            >
+              <span className="font-semibold text-slate-700">Excel ile Toplu Üye Ekle</span>
+              <span className={`text-slate-400 text-lg transition-transform duration-200 ${excelAcik ? 'rotate-180' : ''}`}>⌄</span>
+            </button>
+            {excelAcik && (
+              <div className="px-5 pb-5 border-t border-slate-100 space-y-3 pt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-400">
+                    Sütunlar: <code className="bg-slate-100 px-1 rounded">ad_soyad</code> · <code className="bg-slate-100 px-1 rounded">tel_no</code> · <code className="bg-slate-100 px-1 rounded">cuz_no</code>
+                  </p>
+                  <a href="/api/admin/sablon" download="uye_sablon.xlsx"
+                    className="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition-colors shrink-0 ml-3">
+                    ⬇ Şablon İndir
+                  </a>
+                </div>
+                <label className="flex items-center gap-3 border-2 border-dashed border-slate-200 hover:border-emerald-400 rounded-xl px-4 py-3 cursor-pointer transition-colors">
+                  <span className="text-xl">📂</span>
+                  <div className="flex-1 min-w-0">
+                    {seciliDosya
+                      ? <p className="text-sm font-medium text-slate-700 truncate">{seciliDosya.name}</p>
+                      : <p className="text-sm text-slate-400">Dosya seçmek için tıklayın (.xlsx)</p>
+                    }
+                  </div>
+                  <input ref={dosyaRef} type="file" accept=".xlsx,.xls,.csv"
+                    onChange={dosyaSec} className="hidden" />
+                </label>
+                {seciliDosya && !excelYukleniyor && !excelSonuc && (
+                  <button onClick={excelYukle}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
+                    Yükle — {seciliDosya.name}
+                  </button>
+                )}
+                {excelYukleniyor && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-slate-500">Yükleniyor...</p>
+                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                      <div className="h-2 bg-emerald-500 rounded-full animate-pulse w-full" />
+                    </div>
+                  </div>
+                )}
+                {excelSonuc && (
+                  <div className="space-y-2">
+                    <div className="flex gap-3">
+                      <div className="flex-1 bg-emerald-50 rounded-lg px-3 py-2 text-center">
+                        <p className="text-xl font-bold text-emerald-700">{excelSonuc.eklenen}</p>
+                        <p className="text-xs text-emerald-600">Eklendi / Güncellendi</p>
+                      </div>
+                      <div className="flex-1 bg-amber-50 rounded-lg px-3 py-2 text-center">
+                        <p className="text-xl font-bold text-amber-600">{excelSonuc.atlanan}</p>
+                        <p className="text-xs text-amber-500">Atlandı</p>
+                      </div>
+                    </div>
+                    {excelSonuc.atlanenlar.length > 0 && (
+                      <details className="text-xs">
+                        <summary className="text-slate-500 cursor-pointer hover:text-slate-700">
+                          Atlanan kayıtları göster ({excelSonuc.atlanan})
+                        </summary>
+                        <ul className="mt-2 space-y-1 max-h-48 overflow-y-auto">
+                          {excelSonuc.atlanenlar.map((a, i) => (
+                            <li key={i} className="flex justify-between bg-slate-50 rounded px-2 py-1">
+                              <span className="font-medium text-slate-700">{a.ad}</span>
+                              <span className="text-amber-600 ml-2">{a.sebep}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                    <button onClick={() => { setExcelSonuc(null); setSeciliDosya(null) }}
+                      className="w-full text-xs text-slate-400 hover:text-slate-600 py-1">
+                      Yeni dosya yükle
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
