@@ -4,18 +4,13 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 
 interface Grup { id: string; grup_adi: string }
 interface Donem { id: string; tur_no: number; baslangic_tarihi: string; bitis_tarihi: string }
-interface KPI {
-  bugun_okuyan: number; toplam_aktif_uye: number
-  aktif_tur: number; bu_ay_biten: number
-  en_uzun_seri: { kisi: string; gun: number }
-}
 interface MatrisSatir {
   kullanici_id: string; ad_soyad: string; cuz_no: number | null; toplam: number
   gunler: { tarih: string; okudu: boolean }[]
 }
 interface Tur { id: string; tur_no: number; baslangic_tarihi: string; bitis_tarihi: string; uye_sayisi: number; tamamlanma_yuzdesi: number }
 
-type Sekme = 'kpi' | 'matris' | 'turlar'
+type Sekme = 'matris' | 'turlar'
 
 function tarihKisa(iso: string) {
   return new Date(iso).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })
@@ -25,10 +20,9 @@ function tarihUzun(iso: string) {
 }
 
 export default function RaporlarPage() {
-  const [sekme, setSekme] = useState<Sekme>('kpi')
+  const [sekme, setSekme] = useState<Sekme>('matris')
   const [gruplar, setGruplar] = useState<Grup[]>([])
   const [seciliGrup, setSeciliGrup] = useState('')
-  const [kpi, setKpi] = useState<KPI | null>(null)
   const [donemler, setDonemler] = useState<Donem[]>([])
   const [seciliDonem, setSeciliDonem] = useState('')
   const [matris, setMatris] = useState<{ gunler: string[]; satirlar: MatrisSatir[] } | null>(null)
@@ -53,7 +47,6 @@ export default function RaporlarPage() {
       setGruplar(d.gruplar ?? [])
       if (d.gruplar?.length) setSeciliGrup(d.gruplar[0].id)
     })
-    fetch('/api/admin/raporlar?tip=kpi').then(r => r.json()).then(setKpi)
   }, [])
 
   // Grup değişince dönem listesini ve geçmiş turları yükle
@@ -86,7 +79,7 @@ export default function RaporlarPage() {
     <div className="py-2 space-y-3">
       {/* Sekme + inline kontroller */}
       <div className="flex items-center gap-2 flex-wrap">
-        {([['kpi', 'KPI Kartları'], ['matris', 'Tur Matrisi'], ['turlar', 'Geçmiş Turlar']] as [Sekme, string][]).map(([s, l]) => (
+        {([['matris', 'Tur Matrisi'], ['turlar', 'Geçmiş Turlar']] as [Sekme, string][]).map(([s, l]) => (
           <button key={s} onClick={() => setSekme(s)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${sekme === s ? 'bg-emerald-600 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}>
             {l}
@@ -129,36 +122,6 @@ export default function RaporlarPage() {
           </select>
         )}
       </div>
-
-      {/* ---- KPI ---- */}
-      {sekme === 'kpi' && kpi && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white rounded-xl border border-slate-200 p-4">
-              <p className="text-xs text-slate-400 mb-1">Bugün Okuma Oranı</p>
-              <p className="text-2xl font-bold text-emerald-600">
-                {kpi.toplam_aktif_uye > 0 ? Math.round((kpi.bugun_okuyan / kpi.toplam_aktif_uye) * 100) : 0}%
-              </p>
-              <p className="text-xs text-slate-400 mt-1">{kpi.bugun_okuyan} / {kpi.toplam_aktif_uye} kişi</p>
-            </div>
-            <div className="bg-white rounded-xl border border-slate-200 p-4">
-              <p className="text-xs text-slate-400 mb-1">Aktif Tur Sayısı</p>
-              <p className="text-2xl font-bold text-slate-700">{kpi.aktif_tur}</p>
-              <p className="text-xs text-slate-400 mt-1">şu an devam eden</p>
-            </div>
-            <div className="bg-white rounded-xl border border-slate-200 p-4">
-              <p className="text-xs text-slate-400 mb-1">Bu Ay Biten Turlar</p>
-              <p className="text-2xl font-bold text-slate-700">{kpi.bu_ay_biten}</p>
-              <p className="text-xs text-slate-400 mt-1">tamamlanan hatim</p>
-            </div>
-            <div className="bg-white rounded-xl border border-slate-200 p-4">
-              <p className="text-xs text-slate-400 mb-1">En Uzun Seri</p>
-              <p className="text-2xl font-bold text-amber-500">{kpi.en_uzun_seri.gun} gün</p>
-              <p className="text-xs text-slate-500 mt-1 truncate">{kpi.en_uzun_seri.kisi || '—'}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ---- MATRİS ---- */}
       {sekme === 'matris' && (
