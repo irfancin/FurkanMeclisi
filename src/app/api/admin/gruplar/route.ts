@@ -17,7 +17,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { grup_adi, baslangic_tarihi } = await req.json()
+  const { grup_adi, baslangic_tarihi, tur_no = 1 } = await req.json()
 
   if (!grup_adi || !baslangic_tarihi) {
     return NextResponse.json({ hata: 'Grup adı ve başlangıç tarihi gerekli.' }, { status: 400 })
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   // İlk dönemi oluştur
   await supabase.from('donemler').insert({
     grup_id: grup.id,
-    tur_no: 1,
+    tur_no: Number(tur_no),
     baslangic_tarihi,
     bitis_tarihi,
   })

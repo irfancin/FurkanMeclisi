@@ -24,6 +24,7 @@ export default function YonetimPage() {
   const [yeniGrupTarih, setYeniGrupTarih] = useState(
     new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date())
   )
+  const [yeniGrupTurNo, setYeniGrupTurNo] = useState('1')
   const [grupKayit, setGrupKayit] = useState(false)
   const [grupMesaj, setGrupMesaj] = useState<{ tip: 'ok' | 'hata'; metin: string } | null>(null)
 
@@ -63,7 +64,7 @@ export default function YonetimPage() {
     const res = await fetch('/api/admin/gruplar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ grup_adi: yeniGrupAdi, baslangic_tarihi: yeniGrupTarih }),
+      body: JSON.stringify({ grup_adi: yeniGrupAdi, baslangic_tarihi: yeniGrupTarih, tur_no: Number(yeniGrupTurNo) }),
     })
     const d = await res.json()
     if (!res.ok) {
@@ -200,11 +201,19 @@ export default function YonetimPage() {
                   placeholder="Hatim-2" required
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">1. Tur Başlangıç Tarihi</label>
-                <input type="date" value={yeniGrupTarih} onChange={e => setYeniGrupTarih(e.target.value)}
-                  required
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Mevcut Tur Numarası</label>
+                  <input type="number" min="1" value={yeniGrupTurNo} onChange={e => setYeniGrupTurNo(e.target.value)}
+                    required
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Mevcut Tur Başlangıç Tarihi</label>
+                  <input type="date" value={yeniGrupTarih} onChange={e => setYeniGrupTarih(e.target.value)}
+                    required
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                </div>
               </div>
               {grupMesaj && (
                 <p className={`text-sm px-3 py-2 rounded-lg ${grupMesaj.tip === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
