@@ -45,23 +45,34 @@ export async function POST(req: NextRequest) {
   const atananSet = new Set(atananCuzler)
 
   let eklenen = 0
-  let atlanan = 0
-  const atlanenlar: string[] = []
+  const atlanenlar: { ad: string; sebep: string }[] = []
+  const excelTelSet = new Set<string>() // Excel içi tekrar tespiti
 
   for (const uye of uyeler) {
     const tel = String(uye.tel_no).replace(/\D/g, '')
     const ad = String(uye.ad_soyad).trim()
-    if (!tel || !ad) { atlanan++; continue }
 
-    // Tekrar kontrolü
+    if (!ad) { atlanenlar.push({ ad: '(isimsiz satır)', sebep: 'Ad soyad boş' }); continue }
+    if (!tel) { atlanenlar.push({ ad, sebep: 'Telefon numarası boş' }); continue }
+
+    // Excel içinde aynı numara tekrarı
+    if (excelTelSet.has(tel)) {
+      atlanenlar.push({ ad, sebep: `Tel. no listede tekrarlıyor (${tel})` }); continue
+    }
+    excelTelSet.add(tel)
+
+    // DB'de kayıtlı mı?
     const { data: mevcut } = await supabase
       .from('kullanicilar')
-      .select('id')
+      .select('id, ad_soyad, gruplar(grup_adi)')
       .eq('tel_no', tel)
       .eq('aktif', true)
       .maybeSingle()
 
-    if (mevcut) { atlanan++; atlanenlar.push(ad); continue }
+    if (mevcut) {
+      const grupAdi = (mevcut as { gruplar?: { grup_adi?: string } }).gruplar?.grup_adi ?? 'başka grupta'
+      atlanenlar.push({ ad, sebep: `Zaten kayıtlı — ${grupAdi}` }); continue
+    }
 
     // Üye ekle
     const { data: yeni, error } = await supabase
@@ -70,7 +81,7 @@ export async function POST(req: NextRequest) {
       .select('id')
       .single()
 
-    if (error || !yeni) { atlanan++; continue }
+    if (error || !yeni) { atlanenlar.push({ ad, sebep: 'Veritabanı hatası' }); continue }
 
     // Cüz ataması (yalnızca Hatim grubu)
     if (donem && isHatim) {
@@ -102,5 +113,5 @@ export async function POST(req: NextRequest) {
     eklenen++
   }
 
-  return NextResponse.json({ eklenen, atlanan, atlanenlar })
+  return NextResponse.json({ eklenen, atlanan: atlanenlar.length, atlanenlar })
 }

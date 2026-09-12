@@ -49,7 +49,13 @@ export default function YonetimPage() {
   const [uyeKayit, setUyeKayit] = useState(false)
 
   // Excel
-  const [excelSonuc, setExcelSonuc] = useState<{ eklenen: number; atlanan: number; atlanenlar: string[] } | null>(null)
+  const [excelSonuc, setExcelSonuc] = useState<{
+    eklenen: number
+    atlanan: number
+    atlanenlar: { ad: string; sebep: string }[]
+  } | null>(null)
+  const [seciliDosya, setSeciliDosya] = useState<File | null>(null)
+  const [excelYukleniyor, setExcelYukleniyor] = useState(false)
   const dosyaRef = useRef<HTMLInputElement>(null)
 
   const gruplariYukle = useCallback(async () => {
@@ -142,12 +148,17 @@ export default function YonetimPage() {
   }
 
   // --- Excel import ---
-  const excelYukle = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const dosya = e.target.files?.[0]
-    if (!dosya || !seciliGrup) return
+  const dosyaSec = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSeciliDosya(e.target.files?.[0] ?? null)
+    setExcelSonuc(null)
+  }
+
+  const excelYukle = async () => {
+    if (!seciliDosya || !seciliGrup) return
+    setExcelYukleniyor(true)
     setExcelSonuc(null)
 
-    const buffer = await dosya.arrayBuffer()
+    const buffer = await seciliDosya.arrayBuffer()
     const wb = XLSX.read(buffer)
     const ws = wb.Sheets[wb.SheetNames[0]]
     const satirlar = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '' })
@@ -160,10 +171,11 @@ export default function YonetimPage() {
         tel_no: String(s['tel_no'] ?? s['Telefon'] ?? s['telefon'] ?? '').trim(),
         cuz_no: !isNaN(cuzNo) && cuzNo >= 1 && cuzNo <= 30 ? cuzNo : undefined,
       }
-    }).filter(u => u.ad_soyad && u.tel_no)
+    }).filter(u => u.ad_soyad)
 
     if (uyeListesi.length === 0) {
-      setExcelSonuc({ eklenen: 0, atlanan: 0, atlanenlar: ['Dosyada geçerli veri bulunamadı.'] })
+      setExcelSonuc({ eklenen: 0, atlanan: 1, atlanenlar: [{ ad: '—', sebep: 'Dosyada geçerli veri bulunamadı' }] })
+      setExcelYukleniyor(false)
       return
     }
 
@@ -174,8 +186,10 @@ export default function YonetimPage() {
     })
     const sonuc = await res.json()
     setExcelSonuc(sonuc)
-    await uyeleriYukle(seciliGrup)
+    setSeciliDosya(null)
     if (dosyaRef.current) dosyaRef.current.value = ''
+    await uyeleriYukle(seciliGrup)
+    setExcelYukleniyor(false)
   }
 
   const tohumOlustur = async () => {
@@ -408,28 +422,83 @@ export default function YonetimPage() {
           </div>
 
           {/* Excel import */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <div className="flex items-center justify-between mb-1">
+          <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+            <div className="flex items-center justify-between">
               <h2 className="font-semibold text-slate-700">Excel ile Toplu Üye Ekle</h2>
-              <a
-                href="/api/admin/sablon"
-                download="uye_sablon.xlsx"
-                className="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition-colors"
-              >
+              <a href="/api/admin/sablon" download="uye_sablon.xlsx"
+                className="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition-colors">
                 ⬇ Şablon İndir
               </a>
             </div>
-            <p className="text-xs text-slate-400 mb-3">
-              Excel dosyasında <code className="bg-slate-100 px-1 rounded">ad_soyad</code> ve <code className="bg-slate-100 px-1 rounded">tel_no</code> sütunları olmalı.
+            <p className="text-xs text-slate-400">
+              Sütunlar: <code className="bg-slate-100 px-1 rounded">ad_soyad</code> · <code className="bg-slate-100 px-1 rounded">tel_no</code> · <code className="bg-slate-100 px-1 rounded">cuz_no</code>
             </p>
-            <input ref={dosyaRef} type="file" accept=".xlsx,.xls,.csv" onChange={excelYukle}
-              className="text-sm text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
+
+            {/* Dosya seç */}
+            <label className="flex items-center gap-3 border-2 border-dashed border-slate-200 hover:border-emerald-400 rounded-xl px-4 py-3 cursor-pointer transition-colors">
+              <span className="text-xl">📂</span>
+              <div className="flex-1 min-w-0">
+                {seciliDosya
+                  ? <p className="text-sm font-medium text-slate-700 truncate">{seciliDosya.name}</p>
+                  : <p className="text-sm text-slate-400">Dosya seçmek için tıklayın (.xlsx)</p>
+                }
+              </div>
+              <input ref={dosyaRef} type="file" accept=".xlsx,.xls,.csv"
+                onChange={dosyaSec} className="hidden" />
+            </label>
+
+            {/* Yükle butonu */}
+            {seciliDosya && !excelYukleniyor && !excelSonuc && (
+              <button onClick={excelYukle}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
+                Yükle — {seciliDosya.name}
+              </button>
+            )}
+
+            {/* Yükleniyor */}
+            {excelYukleniyor && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Yükleniyor...</span>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div className="h-2 bg-emerald-500 rounded-full animate-pulse w-full" />
+                </div>
+              </div>
+            )}
+
+            {/* Sonuç */}
             {excelSonuc && (
-              <div className="mt-3 text-sm bg-slate-50 rounded-lg px-3 py-2">
-                <p className="text-emerald-700 font-medium">{excelSonuc.eklenen} üye eklendi</p>
-                {excelSonuc.atlanan > 0 && (
-                  <p className="text-amber-600">{excelSonuc.atlanan} üye atlandı (zaten kayıtlı)</p>
+              <div className="space-y-2">
+                <div className="flex gap-3">
+                  <div className="flex-1 bg-emerald-50 rounded-lg px-3 py-2 text-center">
+                    <p className="text-xl font-bold text-emerald-700">{excelSonuc.eklenen}</p>
+                    <p className="text-xs text-emerald-600">Eklendi</p>
+                  </div>
+                  <div className="flex-1 bg-amber-50 rounded-lg px-3 py-2 text-center">
+                    <p className="text-xl font-bold text-amber-600">{excelSonuc.atlanan}</p>
+                    <p className="text-xs text-amber-500">Atlandı</p>
+                  </div>
+                </div>
+                {excelSonuc.atlanenlar.length > 0 && (
+                  <details className="text-xs">
+                    <summary className="text-slate-500 cursor-pointer hover:text-slate-700">
+                      Atlanan kayıtları göster ({excelSonuc.atlanan})
+                    </summary>
+                    <ul className="mt-2 space-y-1 max-h-48 overflow-y-auto">
+                      {excelSonuc.atlanenlar.map((a, i) => (
+                        <li key={i} className="flex justify-between bg-slate-50 rounded px-2 py-1">
+                          <span className="font-medium text-slate-700">{a.ad}</span>
+                          <span className="text-amber-600 ml-2">{a.sebep}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
                 )}
+                <button onClick={() => { setExcelSonuc(null); setSeciliDosya(null) }}
+                  className="w-full text-xs text-slate-400 hover:text-slate-600 py-1">
+                  Yeni dosya yükle
+                </button>
               </div>
             )}
           </div>
