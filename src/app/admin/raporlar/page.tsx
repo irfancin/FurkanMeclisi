@@ -100,15 +100,15 @@ export default function RaporlarPage() {
         {sekme === 'matris' && (
           <>
             <select value={seciliGrup} onChange={e => setSeciliGrup(e.target.value)}
-              className="border border-emerald-300 rounded-full px-3 py-1.5 text-xs text-emerald-800 bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              className="border border-sky-300 rounded-full px-3 py-1.5 text-xs text-sky-800 bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-400">
               {gruplar.map(g => <option key={g.id} value={g.id}>{g.grup_adi}</option>)}
             </select>
             <select value={seciliDonem} onChange={e => setSeciliDonem(e.target.value)}
-              className="border border-emerald-300 rounded-full px-3 py-1.5 text-xs text-emerald-800 bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              className="border border-sky-300 rounded-full px-3 py-1.5 text-xs text-sky-800 bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-400">
               {donemler.map(d => <option key={d.id} value={d.id}>{d.tur_no}. Tur</option>)}
             </select>
             <button onClick={matrisYukle}
-              className="bg-emerald-600 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-emerald-700 transition-colors">
+              className="bg-sky-500 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-sky-600 transition-colors">
               Göster
             </button>
           </>
@@ -117,7 +117,7 @@ export default function RaporlarPage() {
         {/* Geçmiş Turlar grup seçici */}
         {sekme === 'turlar' && (
           <select value={seciliGrup} onChange={e => setSeciliGrup(e.target.value)}
-            className="border border-emerald-300 rounded-full px-3 py-1.5 text-xs text-emerald-800 bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            className="border border-sky-300 rounded-full px-3 py-1.5 text-xs text-sky-800 bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-400">
             {gruplar.map(g => <option key={g.id} value={g.id}>{g.grup_adi}</option>)}
           </select>
         )}
