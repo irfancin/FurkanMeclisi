@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
   // ── Yönetici girişi (telefon no ile) ─────────────────────────
   if (tel_no) {
-    const temiz = String(tel_no).replace(/\D/g, '')
+    const temiz = String(tel_no).replace(/\D/g, '').replace(/^0/, '')
     const { data: kullanici } = await supabase
       .from('kullanicilar')
       .select('id, ad_soyad, tel_no, grup_id, kullanici_tipi')

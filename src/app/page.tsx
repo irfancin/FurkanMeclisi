@@ -286,7 +286,7 @@ export default function GirisPage() {
                 <input type="tel" value={telNo}
                   onChange={e => setTelNo(e.target.value)}
                   placeholder="05XX XXX XX XX" required
-                  className="w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full border border-blue-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50/30"
                 />
               </div>
               {hata && <p className="text-sm text-red-500">{hata}</p>}

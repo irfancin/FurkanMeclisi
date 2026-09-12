@@ -16,6 +16,9 @@ interface Rapor {
   uyeler: GunlukUye[]
   okuyanlar: number
   toplam: number
+  gun_no: number
+  toplam_gun: number
+  eksik_top3: { ad_soyad: string; eksik_gun: number }[]
 }
 
 type Sekme = 'gunluk' | 'matris'
@@ -164,21 +167,54 @@ export default function RaporlarPage() {
           {raporHata && <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-700 text-sm">{raporHata}</div>}
 
           {rapor && (<>
-            {/* Özet kartlar */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* KPI kartlar — 2x2 grid */}
+            <div className="grid grid-cols-2 gap-3">
               <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
                 <p className="text-2xl font-bold text-emerald-600">{rapor.okuyanlar}</p>
-                <p className="text-xs text-slate-400 mt-1">Okuyan</p>
+                <p className="text-xs text-slate-400 mt-1">Bugün Okuyan</p>
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
                 <p className="text-2xl font-bold text-red-500">{rapor.toplam - rapor.okuyanlar}</p>
-                <p className="text-xs text-slate-400 mt-1">Okumayan</p>
+                <p className="text-xs text-slate-400 mt-1">Bugün Okumayan</p>
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
                 <p className="text-2xl font-bold text-slate-700">{rapor.toplam}</p>
-                <p className="text-xs text-slate-400 mt-1">Toplam</p>
+                <p className="text-xs text-slate-400 mt-1">Toplam Üye</p>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
+                <p className="text-2xl font-bold text-blue-600">
+                  {rapor.gun_no}<span className="text-base font-normal text-slate-400">/{rapor.toplam_gun}</span>
+                </p>
+                <p className="text-xs text-slate-400 mt-1">{rapor.donem.tur_no}. Tur — Günü</p>
               </div>
             </div>
+
+            {/* En çok eksik — top 3 */}
+            {rapor.eksik_top3.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  <h2 className="font-semibold text-slate-700 text-sm">En Çok Eksik (Bu Tur)</h2>
+                </div>
+                <ul className="divide-y divide-slate-50">
+                  {rapor.eksik_top3.map((u, i) => (
+                    <li key={u.ad_soyad} className="flex items-center justify-between px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-400 w-4">{i + 1}.</span>
+                        <span className="text-sm font-medium text-slate-700">{u.ad_soyad}</span>
+                      </div>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                        u.eksik_gun >= 10 ? 'bg-red-100 text-red-600' :
+                        u.eksik_gun >= 5  ? 'bg-amber-100 text-amber-700' :
+                                            'bg-slate-100 text-slate-600'
+                      }`}>
+                        {u.eksik_gun} gün eksik
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* İlerleme çubuğu */}
             <div className="bg-white rounded-xl border border-slate-200 p-4">

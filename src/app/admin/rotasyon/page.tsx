@@ -92,14 +92,7 @@ export default function RotasyonPage() {
 
   return (
     <div className="py-4 max-w-lg space-y-4">
-      <div>
-        <h1 className="text-lg font-semibold text-slate-800">Tur Rotasyonu</h1>
-        <p className="text-sm text-slate-400 mt-0.5">
-          Bir grubun mevcut turu kapanıp yeni tur açılır; cüz numaraları 1 artırılır (30 → 1).
-        </p>
-      </div>
-
-      {/* Grup seç */}
+        {/* Grup seç */}
       <div>
         <label className="block text-xs font-medium text-slate-500 mb-1">Grup</label>
         <select
