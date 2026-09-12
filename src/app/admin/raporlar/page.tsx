@@ -34,6 +34,7 @@ export default function RaporlarPage() {
   const [matris, setMatris] = useState<{ gunler: string[]; satirlar: MatrisSatir[] } | null>(null)
   const [turlar, setTurlar] = useState<Tur[]>([])
   const [yukleniyor, setYukleniyor] = useState(false)
+  const [ozetGoster, setOzetGoster] = useState(false)
   const topScrollRef = useRef<HTMLDivElement>(null)
   const tableScrollRef = useRef<HTMLDivElement>(null)
   const [tableScrollWidth, setTableScrollWidth] = useState(0)
@@ -111,6 +112,12 @@ export default function RaporlarPage() {
               className="bg-sky-500 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-sky-600 transition-colors">
               Göster
             </button>
+            {matris && (
+              <button onClick={() => setOzetGoster(o => !o)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${ozetGoster ? 'bg-slate-700 text-white border-slate-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
+                {ozetGoster ? '📋 Detay' : '📋 Özet'}
+              </button>
+            )}
           </>
         )}
 
@@ -158,7 +165,39 @@ export default function RaporlarPage() {
         <div className="space-y-2">
           {yukleniyor && <p className="text-slate-400 text-sm">Yükleniyor...</p>}
 
-          {matris && (
+          {matris && ozetGoster && (
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b border-slate-100">
+                  <tr>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500">Üye</th>
+                    <th className="px-3 py-2.5 text-center text-xs font-medium text-slate-500">Cüz</th>
+                    <th className="px-3 py-2.5 text-center text-xs font-medium text-slate-500">Okuma</th>
+                    <th className="px-4 py-2.5 text-center text-xs font-medium text-slate-500">Oran</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {matris.satirlar.map(s => {
+                    const oran = Math.round((s.toplam / matris.gunler.length) * 100)
+                    return (
+                      <tr key={s.kullanici_id} className="hover:bg-slate-50">
+                        <td className="px-4 py-2.5 font-medium text-slate-700 text-sm">{s.ad_soyad}</td>
+                        <td className="px-3 py-2.5 text-center text-emerald-600 font-medium text-sm">{s.cuz_no ?? '—'}</td>
+                        <td className="px-3 py-2.5 text-center text-slate-600 text-sm">{s.toplam} gün</td>
+                        <td className="px-4 py-2.5 text-center">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${oran >= 80 ? 'bg-emerald-100 text-emerald-700' : oran >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>
+                            %{oran}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {matris && !ozetGoster && (
             <div className="bg-white rounded-xl border border-slate-200">
               {/* Üst scroll bar */}
               <div

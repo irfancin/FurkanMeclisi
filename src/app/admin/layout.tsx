@@ -44,7 +44,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-slate-500 hidden sm:block">{kullanici.ad_soyad}</span>
-          <button onClick={cikis} className="text-xs text-slate-400 hover:text-slate-600 underline">
+          <button onClick={cikis} className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1">
             Çıkış
           </button>
         </div>

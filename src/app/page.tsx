@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-const VERSIYON = 'v1.38'
+const VERSIYON = 'v1.39'
 
 interface Grup { id: string; grup_adi: string }
 interface Uye { id: string; ad_soyad: string }
@@ -174,7 +174,7 @@ export default function GirisPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
             <div className="flex items-center gap-2">
               <button onClick={() => { setAdim('secim'); setPin(''); setHata('') }}
-                className="text-slate-400 hover:text-slate-600 text-lg">←</button>
+                className="text-slate-500 hover:text-slate-700 text-2xl font-bold w-10 h-10 flex items-center justify-center">←</button>
               <div>
                 <p className="font-semibold text-slate-700">PIN Kodu</p>
                 <p className="text-xs text-slate-400">{uyeAdi}</p>
@@ -250,7 +250,7 @@ export default function GirisPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
             <div className="flex items-center gap-2">
               <button onClick={() => { setAdim('secim'); setHata('') }}
-                className="text-slate-400 hover:text-slate-600 text-lg">←</button>
+                className="text-slate-500 hover:text-slate-700 text-2xl font-bold w-10 h-10 flex items-center justify-center">←</button>
               <h2 className="font-semibold text-slate-700">Yönetici Girişi</h2>
             </div>
             <form onSubmit={yoneticiGiris} className="space-y-3">
