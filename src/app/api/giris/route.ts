@@ -32,21 +32,14 @@ export async function POST(req: NextRequest) {
 
   // ── Üye girişi (isim seç + PIN) ──────────────────────────────
   if (kullanici_id && pin !== undefined) {
-    const { data: kullanici, error: kullaniciHata } = await supabase
+    const { data: kullanici } = await supabase
       .from('kullanicilar')
       .select('id, ad_soyad, grup_id, kullanici_tipi, pin, aktif')
       .eq('id', kullanici_id)
       .maybeSingle()
 
-    if (kullaniciHata) {
-      return NextResponse.json({ hata: `DB hatası: ${kullaniciHata.message}` }, { status: 500 })
-    }
-
     if (!kullanici || !kullanici.aktif) {
-      const detay = !kullanici
-        ? `kayıt yok (id=${kullanici_id})`
-        : `aktif=${kullanici.aktif} (${typeof kullanici.aktif})`
-      return NextResponse.json({ hata: `Kullanıcı bulunamadı. [${detay}]` }, { status: 401 })
+      return NextResponse.json({ hata: 'Kullanıcı bulunamadı.' }, { status: 401 })
     }
 
     const girilenPin = String(pin).padStart(4, '0')
