@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
+const VERSIYON = 'v1.31'
+
 interface Grup { id: string; grup_adi: string }
 interface Uye { id: string; ad_soyad: string }
 type Adim = 'secim' | 'pin' | 'pin-ayarla' | 'yonetici'
@@ -116,7 +118,8 @@ export default function GirisPage() {
   const uyeAdi = uyeler.find(u => u.id === seciliUye)?.ad_soyad ?? ''
 
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative">
+      <span className="fixed bottom-3 right-4 text-xs text-slate-300 select-none">{VERSIYON}</span>
       <div className="w-full max-w-sm space-y-4">
 
         {/* Başlık */}
@@ -158,7 +161,7 @@ export default function GirisPage() {
               Devam →
             </button>
             <button onClick={() => { setAdim('yonetici'); setHata('') }}
-              className="w-full text-xs text-slate-400 hover:text-slate-600 py-1">
+              className="w-full text-xs text-blue-800 hover:text-blue-900 font-medium py-1">
               Yönetici Girişi
             </button>
           </div>
