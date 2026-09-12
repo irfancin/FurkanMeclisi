@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient()
   const bugun = bugunTR()
 
-  // Aktif dönemi bul
+  // Aktif dönemi ara
   const { data: donem } = await supabase
     .from('donemler')
     .select('*')
@@ -25,11 +25,44 @@ export async function GET(req: NextRequest) {
     .gte('bitis_tarihi', bugun)
     .single()
 
+  // Tur arası: aktif dönem yok, en son dönemi getir
   if (!donem) {
-    return NextResponse.json({ hata: 'Bu grup için aktif dönem bulunamadı.' }, { status: 404 })
+    const { data: sonDonem } = await supabase
+      .from('donemler')
+      .select('*')
+      .eq('grup_id', grup_id)
+      .order('tur_no', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (!sonDonem) {
+      return NextResponse.json({ hata: 'Bu grup için dönem bulunamadı.' }, { status: 404 })
+    }
+
+    const yeniBas = new Date(sonDonem.bitis_tarihi)
+    yeniBas.setDate(yeniBas.getDate() + 15)
+
+    const { count: uye_sayisi } = await supabase
+      .from('kullanicilar')
+      .select('*', { count: 'exact', head: true })
+      .eq('grup_id', grup_id)
+      .eq('aktif', true)
+      .eq('kullanici_tipi', 'Uye')
+
+    return NextResponse.json({
+      donem: sonDonem,
+      aktif: false,
+      sonraki_bas: yeniBas.toISOString().split('T')[0],
+      uyeler: [],
+      okuyanlar: 0,
+      toplam: uye_sayisi ?? 0,
+      gun_no: 30,
+      toplam_gun: 30,
+      eksik_top3: [],
+    })
   }
 
-  // Grubun aktif üyeleri
+  // Aktif dönem var — normal akış
   const { data: uyeler } = await supabase
     .from('kullanicilar')
     .select('id, ad_soyad, tel_no')
@@ -39,12 +72,11 @@ export async function GET(req: NextRequest) {
     .order('ad_soyad')
 
   if (!uyeler || uyeler.length === 0) {
-    return NextResponse.json({ donem, uyeler: [], okuyanlar: 0, toplam: 0, gun_no: 1, toplam_gun: 30, eksik_top3: [] })
+    return NextResponse.json({ donem, aktif: true, uyeler: [], okuyanlar: 0, toplam: 0, gun_no: 1, toplam_gun: 30, eksik_top3: [] })
   }
 
   const uye_idler = uyeler.map(u => u.id)
 
-  // Bugünkü okuma kayıtları
   const { data: bugun_okumalar } = await supabase
     .from('okuma_kayitlari')
     .select('kullanici_id')
@@ -53,7 +85,6 @@ export async function GET(req: NextRequest) {
 
   const okuyanSet = new Set((bugun_okumalar ?? []).map(o => o.kullanici_id))
 
-  // Cüz atamaları
   const { data: atamalar } = await supabase
     .from('donem_atamalari')
     .select('kullanici_id, cuz_no')
@@ -70,13 +101,11 @@ export async function GET(req: NextRequest) {
     okudu: okuyanSet.has(u.id),
   }))
 
-  // Turun kaçıncı günü
   const basMs = new Date(donem.baslangic_tarihi).getTime()
   const bugunMs = new Date(bugun).getTime()
   const gun_no = Math.min(Math.floor((bugunMs - basMs) / (1000 * 60 * 60 * 24)) + 1, 30)
   const gecen_gun = Math.max(gun_no, 1)
 
-  // Dönem içindeki tüm okumalar (eksik hesabı için)
   const { data: tumOkumalar } = await supabase
     .from('okuma_kayitlari')
     .select('kullanici_id')
@@ -101,6 +130,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     donem,
+    aktif: true,
     uyeler: liste,
     okuyanlar: okuyanSet.size,
     toplam: liste.length,

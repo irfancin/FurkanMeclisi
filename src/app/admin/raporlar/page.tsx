@@ -13,12 +13,20 @@ interface GunlukUye {
 }
 interface Rapor {
   donem: { tur_no: number; baslangic_tarihi: string; bitis_tarihi: string }
+  aktif?: boolean
+  sonraki_bas?: string
   uyeler: GunlukUye[]
   okuyanlar: number
   toplam: number
   gun_no: number
   toplam_gun: number
   eksik_top3: { ad_soyad: string; eksik_gun: number }[]
+}
+
+function tarihTR(iso: string) {
+  return new Date(iso).toLocaleDateString('tr-TR', {
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Istanbul'
+  })
 }
 
 type Sekme = 'gunluk' | 'matris'
@@ -166,7 +174,26 @@ export default function RaporlarPage() {
           {raporYukleniyor && <p className="text-slate-400 text-sm">Yükleniyor...</p>}
           {raporHata && <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-700 text-sm">{raporHata}</div>}
 
-          {rapor && (<>
+          {/* Tur arası durumu */}
+          {rapor && rapor.aktif === false && (
+            <div className="space-y-3">
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center">
+                <p className="text-2xl mb-2">⏸</p>
+                <p className="font-semibold text-amber-800">{rapor.donem.tur_no}. Tur tamamlandı</p>
+                {rapor.sonraki_bas && (
+                  <p className="text-sm text-amber-600 mt-1">
+                    Yeni tur: {tarihTR(rapor.sonraki_bas)}
+                  </p>
+                )}
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
+                <p className="text-2xl font-bold text-slate-700">{rapor.toplam}</p>
+                <p className="text-xs text-slate-400 mt-1">Toplam Üye</p>
+              </div>
+            </div>
+          )}
+
+          {rapor && rapor.aktif !== false && (<>
             {/* KPI kartlar — 2x2 grid */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
