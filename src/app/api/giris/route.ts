@@ -78,11 +78,11 @@ export async function POST(req: NextRequest) {
         if (!atama) {
           return NextResponse.json({ hata: 'Cüz ataması bulunamadı.' }, { status: 401 })
         }
-        // Geçici PIN: (mevcut_tur - 1) 2 hane + cüz_no 2 hane
-        // Örn: tur 47, cüz 1 → "4601"
-        const oncekiTur = String(Math.max(sonDonem.tur_no - 1, 0)).padStart(2, '0')
+        // Geçici PIN: tur_no 2 hane + cüz_no 2 hane
+        // Örn: tur 46, cüz 2 → "4602"
+        const turStr = String(sonDonem.tur_no).padStart(2, '0')
         const cuzStr = String(atama.cuz_no).padStart(2, '0')
-        geciciPin = oncekiTur + cuzStr
+        geciciPin = turStr + cuzStr
       } else {
         geciciPin = '0000' // Zikir grubu için varsayılan
       }

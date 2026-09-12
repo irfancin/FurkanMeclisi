@@ -87,7 +87,7 @@ export default function RaporlarPage() {
       <div className="flex gap-2 flex-wrap">
         {([['kpi', 'KPI Kartları'], ['matris', 'Tur Matrisi'], ['turlar', 'Geçmiş Turlar']] as [Sekme, string][]).map(([s, l]) => (
           <button key={s} onClick={() => setSekme(s)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${sekme === s ? 'bg-emerald-600 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}>
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${sekme === s ? 'bg-emerald-600 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}>
             {l}
           </button>
         ))}
@@ -125,24 +125,24 @@ export default function RaporlarPage() {
 
       {/* ---- MATRİS ---- */}
       {sekme === 'matris' && (
-        <div className="space-y-3">
-          <div className="flex gap-3 flex-wrap items-end">
+        <div className="space-y-2">
+          <div className="flex gap-2 flex-wrap items-end">
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Grup</label>
+              <label className="block text-xs font-medium text-slate-500 mb-0.5">Grup</label>
               <select value={seciliGrup} onChange={e => setSeciliGrup(e.target.value)}
-                className="border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                className="border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 {gruplar.map(g => <option key={g.id} value={g.id}>{g.grup_adi}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Tur</label>
+              <label className="block text-xs font-medium text-slate-500 mb-0.5">Tur</label>
               <select value={seciliDonem} onChange={e => setSeciliDonem(e.target.value)}
-                className="border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                className="border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 {donemler.map(d => <option key={d.id} value={d.id}>{d.tur_no}. Tur</option>)}
               </select>
             </div>
             <button onClick={matrisYukle}
-              className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">
+              className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-700">
               Göster
             </button>
           </div>
@@ -166,10 +166,11 @@ export default function RaporlarPage() {
                   if (el) setTableScrollWidth(el.scrollWidth)
                 }}
                 onScroll={onTableScroll}
-                className="overflow-x-auto"
+                className="overflow-auto"
+                style={{ maxHeight: 'calc(100vh - 230px)' }}
               >
               <table className="text-xs min-w-max">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-white">
                   <tr className="border-b border-slate-100">
                     <th className="sticky left-0 bg-white px-3 py-2 text-left text-slate-500 font-medium min-w-32">Üye</th>
                     <th className="px-2 py-2 text-slate-400 font-medium">Cüz</th>

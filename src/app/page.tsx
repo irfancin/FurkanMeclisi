@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-const VERSIYON = 'v1.31'
+const VERSIYON = 'v1.35'
 
 interface Grup { id: string; grup_adi: string }
 interface Uye { id: string; ad_soyad: string }
@@ -191,8 +191,8 @@ export default function GirisPage() {
                   className="w-full border border-slate-300 rounded-xl px-4 py-4 text-slate-800 text-center text-3xl tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
                 <p className="text-xs text-slate-400 mt-2 text-center leading-relaxed">
-                  İlk girişte: <span className="font-medium">(önceki tur no) + (cüz no)</span>
-                  <br />Örn: 47. tur, 1. cüz → <span className="font-mono font-medium">4601</span>
+                  İlk girişte: <span className="font-medium">(tur no) + (cüz no)</span>
+                  <br />Örn: 46. tur, 2. cüz → <span className="font-mono font-medium">4602</span>
                 </p>
               </div>
               {hata && <p className="text-sm text-red-500 text-center">{hata}</p>}
