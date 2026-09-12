@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET() {
@@ -14,4 +14,44 @@ export async function GET() {
   }
 
   return NextResponse.json({ gruplar })
+}
+
+export async function POST(req: NextRequest) {
+  const { grup_adi, baslangic_tarihi } = await req.json()
+
+  if (!grup_adi || !baslangic_tarihi) {
+    return NextResponse.json({ hata: 'Grup adı ve başlangıç tarihi gerekli.' }, { status: 400 })
+  }
+
+  const supabase = await createClient()
+
+  // Grup oluştur
+  const { data: grup, error: grupHata } = await supabase
+    .from('gruplar')
+    .insert({ grup_adi })
+    .select('id')
+    .single()
+
+  if (grupHata) {
+    const mesaj = grupHata.code === '23505'
+      ? 'Bu grup adı zaten mevcut.'
+      : 'Grup oluşturulamadı.'
+    return NextResponse.json({ hata: mesaj }, { status: 400 })
+  }
+
+  // Bitiş tarihi = başlangıç + 29 gün
+  const baslangic = new Date(baslangic_tarihi)
+  const bitis = new Date(baslangic)
+  bitis.setDate(bitis.getDate() + 29)
+  const bitis_tarihi = bitis.toISOString().split('T')[0]
+
+  // İlk dönemi oluştur
+  await supabase.from('donemler').insert({
+    grup_id: grup.id,
+    tur_no: 1,
+    baslangic_tarihi,
+    bitis_tarihi,
+  })
+
+  return NextResponse.json({ grup_id: grup.id, basarili: true })
 }
