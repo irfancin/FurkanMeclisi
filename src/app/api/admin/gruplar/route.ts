@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   if (grupHata) {
     const mesaj = grupHata.code === '23505'
       ? 'Bu grup adı zaten mevcut.'
-      : 'Grup oluşturulamadı.'
+      : `Grup oluşturulamadı. [${grupHata.code}] ${grupHata.message}`
     return NextResponse.json({ hata: mesaj }, { status: 400 })
   }
 
