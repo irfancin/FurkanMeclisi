@@ -52,17 +52,33 @@ export async function POST() {
       tarihler.map(tarih => ({ kullanici_id: u.id, tarih }))
     )
 
+    // Mevcut kayıtları çek, sadece eksik olanları ekle
+    const { data: mevcutlar } = await supabase
+      .from('okuma_kayitlari')
+      .select('kullanici_id, tarih')
+      .in('kullanici_id', uyeler.map(u => u.id))
+      .gte('tarih', donem.baslangic_tarihi)
+      .lte('tarih', donem.bitis_tarihi)
+
+    const mevcutSet = new Set((mevcutlar ?? []).map(m => `${m.kullanici_id}_${m.tarih}`))
+    const yeniKayitlar = kayitlar.filter(k => !mevcutSet.has(`${k.kullanici_id}_${k.tarih}`))
+
+    if (yeniKayitlar.length === 0) {
+      sonuclar.push({ grup: grup.grup_adi, gun: tarihler.length, uye: uyeler.length, eklenen: 0 })
+      continue
+    }
+
     const { error } = await supabase
       .from('okuma_kayitlari')
-      .upsert(kayitlar, { onConflict: 'kullanici_id,tarih' })
+      .insert(yeniKayitlar)
 
     if (!error) {
-      toplamKayit += kayitlar.length
+      toplamKayit += yeniKayitlar.length
       sonuclar.push({
         grup: grup.grup_adi,
         gun: tarihler.length,
         uye: uyeler.length,
-        eklenen: kayitlar.length,
+        eklenen: yeniKayitlar.length,
       })
     }
   }
