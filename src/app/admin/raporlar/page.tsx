@@ -82,15 +82,45 @@ export default function RaporlarPage() {
   useEffect(() => { if (sekme === 'matris') matrisYukle() }, [sekme, matrisYukle])
 
   return (
-    <div className="py-4 space-y-4">
-      {/* Sekme */}
-      <div className="flex gap-2 flex-wrap">
+    <div className="py-2 space-y-3">
+      {/* Sekme + inline kontroller */}
+      <div className="flex items-center gap-2 flex-wrap">
         {([['kpi', 'KPI Kartları'], ['matris', 'Tur Matrisi'], ['turlar', 'Geçmiş Turlar']] as [Sekme, string][]).map(([s, l]) => (
           <button key={s} onClick={() => setSekme(s)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${sekme === s ? 'bg-emerald-600 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}>
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${sekme === s ? 'bg-emerald-600 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}>
             {l}
           </button>
         ))}
+
+        {(sekme === 'matris' || sekme === 'turlar') && (
+          <span className="text-slate-300 select-none">|</span>
+        )}
+
+        {/* Matris kontrolleri — sekme ile aynı satırda */}
+        {sekme === 'matris' && (
+          <>
+            <select value={seciliGrup} onChange={e => setSeciliGrup(e.target.value)}
+              className="border border-emerald-300 rounded-full px-3 py-1.5 text-xs text-emerald-800 bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              {gruplar.map(g => <option key={g.id} value={g.id}>{g.grup_adi}</option>)}
+            </select>
+            <select value={seciliDonem} onChange={e => setSeciliDonem(e.target.value)}
+              className="border border-emerald-300 rounded-full px-3 py-1.5 text-xs text-emerald-800 bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              {donemler.map(d => <option key={d.id} value={d.id}>{d.tur_no}. Tur</option>)}
+            </select>
+            <button onClick={matrisYukle}
+              className="bg-emerald-600 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-emerald-700 transition-colors">
+              Göster
+            </button>
+          </>
+        )}
+
+        {/* Geçmiş Turlar grup seçici */}
+        {sekme === 'turlar' && (
+          <select value={seciliGrup} onChange={e => setSeciliGrup(e.target.value)}
+            className="border border-emerald-300 rounded-full px-3 py-1.5 text-xs text-emerald-800 bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            {gruplar.map(g => <option key={g.id} value={g.id}>{g.grup_adi}</option>)}
+          </select>
+        )}
       </div>
 
       {/* ---- KPI ---- */}
@@ -126,23 +156,6 @@ export default function RaporlarPage() {
       {/* ---- MATRİS ---- */}
       {sekme === 'matris' && (
         <div className="space-y-2">
-          <div className="flex gap-2 items-center flex-wrap">
-            <select value={seciliGrup} onChange={e => setSeciliGrup(e.target.value)}
-              className="border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="" disabled>Grup seç...</option>
-              {gruplar.map(g => <option key={g.id} value={g.id}>{g.grup_adi}</option>)}
-            </select>
-            <select value={seciliDonem} onChange={e => setSeciliDonem(e.target.value)}
-              className="border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="" disabled>Tur seç...</option>
-              {donemler.map(d => <option key={d.id} value={d.id}>{d.tur_no}. Tur</option>)}
-            </select>
-            <button onClick={matrisYukle}
-              className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-700">
-              Göster
-            </button>
-          </div>
-
           {yukleniyor && <p className="text-slate-400 text-sm">Yükleniyor...</p>}
 
           {matris && (
@@ -203,11 +216,6 @@ export default function RaporlarPage() {
       {/* ---- TAMAMLANAN TURLAR ---- */}
       {sekme === 'turlar' && (
         <div className="space-y-3">
-          <select value={seciliGrup} onChange={e => setSeciliGrup(e.target.value)}
-            className="border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-            <option value="" disabled>Grup seç...</option>
-            {gruplar.map(g => <option key={g.id} value={g.id}>{g.grup_adi}</option>)}
-          </select>
 
           {turlar.length === 0
             ? <p className="text-slate-400 text-sm">Henüz tamamlanan tur yok.</p>
