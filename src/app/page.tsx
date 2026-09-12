@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-const VERSIYON = 'v1.44'
+const VERSIYON = 'v1.45'
 
 interface Grup { id: string; grup_adi: string }
 interface Uye { id: string; ad_soyad: string }
@@ -136,7 +136,7 @@ export default function GirisPage() {
             <span className="text-3xl">📖</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-800">Furkan Meclisi</h1>
-          <p className="text-slate-400 text-sm">Hatim Takip</p>
+          <p className="text-slate-400 text-sm">Hatim Kardeşliği</p>
         </div>
 
         {/* Toggle: Üye / Yönetici */}
