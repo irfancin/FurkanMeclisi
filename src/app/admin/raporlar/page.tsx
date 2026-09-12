@@ -10,7 +10,7 @@ interface KPI {
   en_uzun_seri: { kisi: string; gun: number }
 }
 interface MatrisSatir {
-  kullanici_id: string; ad_soyad: string; cuz_no: number; toplam: number
+  kullanici_id: string; ad_soyad: string; cuz_no: number | null; toplam: number
   gunler: { tarih: string; okudu: boolean }[]
 }
 interface Tur { id: string; tur_no: number; baslangic_tarihi: string; bitis_tarihi: string; uye_sayisi: number; tamamlanma_yuzdesi: number }
@@ -154,7 +154,7 @@ export default function RaporlarPage() {
                   {matris.satirlar.map(s => (
                     <tr key={s.kullanici_id} className="hover:bg-slate-50">
                       <td className="sticky left-0 bg-white px-3 py-2 font-medium text-slate-700 whitespace-nowrap">{s.ad_soyad}</td>
-                      <td className="px-2 py-2 text-slate-400 text-center">{s.cuz_no}</td>
+                      <td className="px-2 py-2 text-slate-400 text-center">{s.cuz_no ?? '—'}</td>
                       {s.gunler.map(g => (
                         <td key={g.tarih} className="px-1.5 py-2 text-center">
                           {g.okudu

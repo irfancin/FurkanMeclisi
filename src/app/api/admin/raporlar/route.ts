@@ -111,14 +111,39 @@ export async function GET(req: NextRequest) {
       .select('kullanici_id, cuz_no, kullanicilar(ad_soyad)')
       .eq('donem_id', donem_id)
 
-    const uye_idler = (atamalar ?? []).map(a => a.kullanici_id)
+    // donem_atamalari boşsa grubun aktif üyelerini kullan (cüz ataması henüz yoksa)
+    type UyeSatir = { kullanici_id: string; ad_soyad: string; cuz_no: number | null }
+    let uyeListesi: UyeSatir[]
 
-    const { data: okumalar } = await supabase
-      .from('okuma_kayitlari')
-      .select('kullanici_id, tarih')
-      .in('kullanici_id', uye_idler)
-      .gte('tarih', donem.baslangic_tarihi)
-      .lte('tarih', donem.bitis_tarihi)
+    if (atamalar && atamalar.length > 0) {
+      uyeListesi = atamalar.map(a => ({
+        kullanici_id: a.kullanici_id,
+        ad_soyad: (a.kullanicilar as unknown as { ad_soyad: string } | null)?.ad_soyad ?? '',
+        cuz_no: a.cuz_no,
+      })).sort((a, b) => (a.cuz_no ?? 99) - (b.cuz_no ?? 99))
+    } else {
+      const { data: aktifUyeler } = await supabase
+        .from('kullanicilar')
+        .select('id, ad_soyad')
+        .eq('grup_id', grup_id)
+        .eq('aktif', true)
+        .eq('kullanici_tipi', 'Uye')
+        .order('ad_soyad')
+      uyeListesi = (aktifUyeler ?? []).map(u => ({
+        kullanici_id: u.id, ad_soyad: u.ad_soyad, cuz_no: null,
+      }))
+    }
+
+    const uye_idler = uyeListesi.map(u => u.kullanici_id)
+
+    const { data: okumalar } = uye_idler.length > 0
+      ? await supabase
+          .from('okuma_kayitlari')
+          .select('kullanici_id, tarih')
+          .in('kullanici_id', uye_idler)
+          .gte('tarih', donem.baslangic_tarihi)
+          .lte('tarih', donem.bitis_tarihi)
+      : { data: [] }
 
     const okumaSet = new Set((okumalar ?? []).map(o => `${o.kullanici_id}_${o.tarih}`))
 
@@ -131,13 +156,13 @@ export async function GET(req: NextRequest) {
       gunler.push(t.toISOString().split('T')[0])
     }
 
-    const satirlar = (atamalar ?? []).map(a => ({
-      kullanici_id: a.kullanici_id,
-      ad_soyad: (a.kullanicilar as unknown as { ad_soyad: string } | null)?.ad_soyad ?? '',
-      cuz_no: a.cuz_no,
-      gunler: gunler.map(g => ({ tarih: g, okudu: okumaSet.has(`${a.kullanici_id}_${g}`) })),
-      toplam: gunler.filter(g => okumaSet.has(`${a.kullanici_id}_${g}`)).length,
-    })).sort((a, b) => a.cuz_no - b.cuz_no)
+    const satirlar = uyeListesi.map(u => ({
+      kullanici_id: u.kullanici_id,
+      ad_soyad: u.ad_soyad,
+      cuz_no: u.cuz_no,
+      gunler: gunler.map(g => ({ tarih: g, okudu: okumaSet.has(`${u.kullanici_id}_${g}`) })),
+      toplam: gunler.filter(g => okumaSet.has(`${u.kullanici_id}_${g}`)).length,
+    }))
 
     return NextResponse.json({ donem, gunler, satirlar })
   }
@@ -169,16 +194,34 @@ export async function GET(req: NextRequest) {
         .select('kullanici_id')
         .eq('donem_id', d.id)
 
-      const uye_sayisi = atamalar?.length ?? 0
+      // donem_atamalari boşsa grubun aktif üyelerini kullan
+      let uye_idler: string[]
+      let uye_sayisi: number
+
+      if (atamalar && atamalar.length > 0) {
+        uye_idler = atamalar.map(a => a.kullanici_id)
+        uye_sayisi = atamalar.length
+      } else {
+        const { data: aktifUyeler } = await supabase
+          .from('kullanicilar')
+          .select('id')
+          .eq('grup_id', d.grup_id)
+          .eq('aktif', true)
+          .eq('kullanici_tipi', 'Uye')
+        uye_idler = (aktifUyeler ?? []).map(u => u.id)
+        uye_sayisi = uye_idler.length
+      }
+
       const mumkun_okuma = uye_sayisi * 30
 
-      const uye_idler = (atamalar ?? []).map(a => a.kullanici_id)
-      const { count: gerceklesen } = await supabase
-        .from('okuma_kayitlari')
-        .select('*', { count: 'exact', head: true })
-        .in('kullanici_id', uye_idler)
-        .gte('tarih', d.baslangic_tarihi)
-        .lte('tarih', d.bitis_tarihi)
+      const { count: gerceklesen } = uye_idler.length > 0
+        ? await supabase
+            .from('okuma_kayitlari')
+            .select('*', { count: 'exact', head: true })
+            .in('kullanici_id', uye_idler)
+            .gte('tarih', d.baslangic_tarihi)
+            .lte('tarih', d.bitis_tarihi)
+        : { count: 0 }
 
       const tamamlanma = mumkun_okuma > 0
         ? Math.round(((gerceklesen ?? 0) / mumkun_okuma) * 100)
