@@ -7,7 +7,7 @@ function bugunTR() {
 
 export async function POST(req: NextRequest) {
   const { grup_id, uyeler } = await req.json()
-  // uyeler: Array<{ ad_soyad: string; tel_no: string }>
+  // uyeler: Array<{ ad_soyad: string; tel_no: string; cuz_no?: number }>
 
   if (!grup_id || !Array.isArray(uyeler) || uyeler.length === 0) {
     return NextResponse.json({ hata: 'Eksik parametre.' }, { status: 400 })
@@ -74,10 +74,22 @@ export async function POST(req: NextRequest) {
 
     // Cüz ataması (yalnızca Hatim grubu)
     if (donem && isHatim) {
+      // Excel'den gelen cüz no geçerliyse onu kullan, çakışıyorsa otomatik ata
+      const istenenCuz = uye.cuz_no && Number.isInteger(Number(uye.cuz_no))
+        ? Number(uye.cuz_no)
+        : null
+
       let cuz_no: number | null = null
-      for (let i = 1; i <= 30; i++) {
-        if (!atananSet.has(i)) { cuz_no = i; break }
+
+      if (istenenCuz && istenenCuz >= 1 && istenenCuz <= 30 && !atananSet.has(istenenCuz)) {
+        cuz_no = istenenCuz
+      } else {
+        // İstenen cüz boş veya çakışıyor → ilk müsait cüzü ata
+        for (let i = 1; i <= 30; i++) {
+          if (!atananSet.has(i)) { cuz_no = i; break }
+        }
       }
+
       if (cuz_no) {
         await supabase.from('donem_atamalari').insert({
           kullanici_id: yeni.id,

@@ -1,0 +1,20 @@
+-- Supabase SQL Editor > + New query > Calistir
+-- Tum tablolar icin okuma+yazma politikalari
+
+-- gruplar
+CREATE POLICY "gruplar_herkese_acik" ON gruplar FOR ALL USING (true) WITH CHECK (true);
+
+-- donemler
+CREATE POLICY "donemler_herkese_acik" ON donemler FOR ALL USING (true) WITH CHECK (true);
+
+-- kullanicilar
+CREATE POLICY "kullanicilar_herkese_acik" ON kullanicilar FOR ALL USING (true) WITH CHECK (true);
+
+-- donem_atamalari
+CREATE POLICY "donem_atamalari_herkese_acik" ON donem_atamalari FOR ALL USING (true) WITH CHECK (true);
+
+-- okuma_kayitlari
+CREATE POLICY "okuma_kayitlari_herkese_acik" ON okuma_kayitlari FOR ALL USING (true) WITH CHECK (true);
+
+-- giris_loglari
+CREATE POLICY "giris_loglari_herkese_acik" ON giris_loglari FOR ALL USING (true) WITH CHECK (true);

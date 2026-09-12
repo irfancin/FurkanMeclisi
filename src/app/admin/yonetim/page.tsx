@@ -32,7 +32,7 @@ export default function YonetimPage() {
   const [tohumSonuc, setTohumSonuc] = useState<{ toplamKayit: number; sonuclar: { grup: string; gun: number; uye: number; eklenen: number }[] } | null>(null)
 
   // Üye formu
-  const [uyeForm, setUyeForm] = useState({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye' })
+  const [uyeForm, setUyeForm] = useState({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' })
   const [duzenleId, setDuzenleId] = useState<string | null>(null)
   const [uyeMesaj, setUyeMesaj] = useState<{ tip: 'ok' | 'hata'; metin: string } | null>(null)
   const [uyeKayit, setUyeKayit] = useState(false)
@@ -91,8 +91,14 @@ export default function YonetimPage() {
       method: duzenleId ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(duzenleId
-        ? { id: duzenleId, ...uyeForm, tel_no: tel }
-        : { ...uyeForm, tel_no: tel, grup_id: seciliGrup }
+        ? { id: duzenleId, ad_soyad: uyeForm.ad_soyad, tel_no: tel, kullanici_tipi: uyeForm.kullanici_tipi }
+        : {
+            ad_soyad: uyeForm.ad_soyad,
+            tel_no: tel,
+            kullanici_tipi: uyeForm.kullanici_tipi,
+            grup_id: seciliGrup,
+            cuz_no: uyeForm.cuz_no ? parseInt(uyeForm.cuz_no) : undefined,
+          }
       ),
     })
     const d = await res.json()
@@ -100,7 +106,7 @@ export default function YonetimPage() {
       setUyeMesaj({ tip: 'hata', metin: d.hata })
     } else {
       setUyeMesaj({ tip: 'ok', metin: duzenleId ? 'Güncellendi.' : 'Üye eklendi.' })
-      setUyeForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye' })
+      setUyeForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' })
       setDuzenleId(null)
       await uyeleriYukle(seciliGrup)
     }
@@ -109,7 +115,7 @@ export default function YonetimPage() {
 
   const duzenlemeBasla = (u: Uye) => {
     setDuzenleId(u.id)
-    setUyeForm({ ad_soyad: u.ad_soyad, tel_no: u.tel_no, kullanici_tipi: u.kullanici_tipi })
+    setUyeForm({ ad_soyad: u.ad_soyad, tel_no: u.tel_no, kullanici_tipi: u.kullanici_tipi, cuz_no: String(u.cuz_no ?? '') })
     setUyeMesaj(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -135,10 +141,15 @@ export default function YonetimPage() {
     const ws = wb.Sheets[wb.SheetNames[0]]
     const satirlar = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '' })
 
-    const uyeListesi = satirlar.map(s => ({
-      ad_soyad: String(s['ad_soyad'] ?? s['Ad Soyad'] ?? s['isim'] ?? '').trim(),
-      tel_no: String(s['tel_no'] ?? s['Telefon'] ?? s['telefon'] ?? '').trim(),
-    })).filter(u => u.ad_soyad && u.tel_no)
+    const uyeListesi = satirlar.map(s => {
+      const cuzRaw = s['cuz_no'] ?? s['Cüz No'] ?? s['cuz'] ?? ''
+      const cuzNo = parseInt(String(cuzRaw))
+      return {
+        ad_soyad: String(s['ad_soyad'] ?? s['Ad Soyad'] ?? s['isim'] ?? '').trim(),
+        tel_no: String(s['tel_no'] ?? s['Telefon'] ?? s['telefon'] ?? '').trim(),
+        cuz_no: !isNaN(cuzNo) && cuzNo >= 1 && cuzNo <= 30 ? cuzNo : undefined,
+      }
+    }).filter(u => u.ad_soyad && u.tel_no)
 
     if (uyeListesi.length === 0) {
       setExcelSonuc({ eklenen: 0, atlanan: 0, atlanenlar: ['Dosyada geçerli veri bulunamadı.'] })
@@ -330,6 +341,20 @@ export default function YonetimPage() {
                     className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
               </div>
+              {!duzenleId && gruplar.find(g => g.id === seciliGrup)?.grup_tipi === 'Hatim' && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">
+                    Cüz No <span className="text-slate-400 font-normal">(1–30, boş bırakılırsa otomatik atanır)</span>
+                  </label>
+                  <input
+                    type="number" min="1" max="30"
+                    value={uyeForm.cuz_no}
+                    onChange={e => setUyeForm(f => ({ ...f, cuz_no: e.target.value }))}
+                    placeholder="Otomatik"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1">Kullanıcı Tipi</label>
                 <select value={uyeForm.kullanici_tipi} onChange={e => setUyeForm(f => ({ ...f, kullanici_tipi: e.target.value }))}
@@ -349,7 +374,7 @@ export default function YonetimPage() {
                   {uyeKayit ? 'Kaydediliyor...' : duzenleId ? 'Güncelle' : 'Üye Ekle'}
                 </button>
                 {duzenleId && (
-                  <button type="button" onClick={() => { setDuzenleId(null); setUyeForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye' }); setUyeMesaj(null) }}
+                  <button type="button" onClick={() => { setDuzenleId(null); setUyeForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' }); setUyeMesaj(null) }}
                     className="px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
                     İptal
                   </button>

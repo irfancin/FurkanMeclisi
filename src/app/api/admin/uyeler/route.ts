@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
 
 // Yeni üye ekle
 export async function POST(req: NextRequest) {
-  const { tel_no, ad_soyad, grup_id, kullanici_tipi = 'Uye' } = await req.json()
+  const { tel_no, ad_soyad, grup_id, kullanici_tipi = 'Uye', cuz_no } = await req.json()
   if (!tel_no || !ad_soyad || !grup_id) {
     return NextResponse.json({ hata: 'Tüm alanlar zorunlu.' }, { status: 400 })
   }
@@ -115,12 +115,27 @@ export async function POST(req: NextRequest) {
         .maybeSingle()
 
       if (donem) {
-        const cuz_no = await musaitCuzBul(supabase, donem.id)
-        if (cuz_no) {
+        // Gelen cüz_no geçerliyse ve müsaitse onu kullan, değilse otomatik ata
+        const istenen = cuz_no && Number.isInteger(Number(cuz_no)) ? Number(cuz_no) : null
+        let atanacak: number | null = null
+
+        if (istenen && istenen >= 1 && istenen <= 30) {
+          const { data: mevcut } = await supabase
+            .from('donem_atamalari')
+            .select('id')
+            .eq('donem_id', donem.id)
+            .eq('cuz_no', istenen)
+            .maybeSingle()
+          atanacak = mevcut ? await musaitCuzBul(supabase, donem.id) : istenen
+        } else {
+          atanacak = await musaitCuzBul(supabase, donem.id)
+        }
+
+        if (atanacak) {
           await supabase.from('donem_atamalari').insert({
             kullanici_id: yeniUye.id,
             donem_id: donem.id,
-            cuz_no,
+            cuz_no: atanacak,
           })
         }
       }
