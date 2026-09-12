@@ -78,7 +78,7 @@ export default function GirisPage() {
             placeholder="05XX XXX XX XX"
             value={tel}
             onChange={e => setTel(telFormatla(e.target.value))}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-lg tracking-wider focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-lg tracking-wider text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             autoComplete="tel"
           />
 
