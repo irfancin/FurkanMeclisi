@@ -126,21 +126,17 @@ export default function RaporlarPage() {
       {/* ---- MATRİS ---- */}
       {sekme === 'matris' && (
         <div className="space-y-2">
-          <div className="flex gap-2 flex-wrap items-end">
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-0.5">Grup</label>
-              <select value={seciliGrup} onChange={e => setSeciliGrup(e.target.value)}
-                className="border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                {gruplar.map(g => <option key={g.id} value={g.id}>{g.grup_adi}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-0.5">Tur</label>
-              <select value={seciliDonem} onChange={e => setSeciliDonem(e.target.value)}
-                className="border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                {donemler.map(d => <option key={d.id} value={d.id}>{d.tur_no}. Tur</option>)}
-              </select>
-            </div>
+          <div className="flex gap-2 items-center flex-wrap">
+            <select value={seciliGrup} onChange={e => setSeciliGrup(e.target.value)}
+              className="border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="" disabled>Grup seç...</option>
+              {gruplar.map(g => <option key={g.id} value={g.id}>{g.grup_adi}</option>)}
+            </select>
+            <select value={seciliDonem} onChange={e => setSeciliDonem(e.target.value)}
+              className="border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="" disabled>Tur seç...</option>
+              {donemler.map(d => <option key={d.id} value={d.id}>{d.tur_no}. Tur</option>)}
+            </select>
             <button onClick={matrisYukle}
               className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-700">
               Göster
@@ -167,7 +163,7 @@ export default function RaporlarPage() {
                 }}
                 onScroll={onTableScroll}
                 className="overflow-auto"
-                style={{ maxHeight: 'calc(100vh - 230px)' }}
+                style={{ maxHeight: 'calc(100vh - 200px)' }}
               >
               <table className="text-xs min-w-max">
                 <thead className="sticky top-0 z-10 bg-white">
@@ -207,13 +203,11 @@ export default function RaporlarPage() {
       {/* ---- TAMAMLANAN TURLAR ---- */}
       {sekme === 'turlar' && (
         <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Grup</label>
-            <select value={seciliGrup} onChange={e => setSeciliGrup(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              {gruplar.map(g => <option key={g.id} value={g.id}>{g.grup_adi}</option>)}
-            </select>
-          </div>
+          <select value={seciliGrup} onChange={e => setSeciliGrup(e.target.value)}
+            className="border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="" disabled>Grup seç...</option>
+            {gruplar.map(g => <option key={g.id} value={g.id}>{g.grup_adi}</option>)}
+          </select>
 
           {turlar.length === 0
             ? <p className="text-slate-400 text-sm">Henüz tamamlanan tur yok.</p>
