@@ -1,69 +1,106 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+function telFormatla(deger: string) {
+  const rakamlar = deger.replace(/\D/g, '').slice(0, 11)
+  if (rakamlar.length <= 4) return rakamlar
+  if (rakamlar.length <= 7) return `${rakamlar.slice(0, 4)} ${rakamlar.slice(4)}`
+  if (rakamlar.length <= 9) return `${rakamlar.slice(0, 4)} ${rakamlar.slice(4, 7)} ${rakamlar.slice(7)}`
+  return `${rakamlar.slice(0, 4)} ${rakamlar.slice(4, 7)} ${rakamlar.slice(7, 9)} ${rakamlar.slice(9)}`
+}
+
+export default function GirisPage() {
+  const [tel, setTel] = useState('')
+  const [yukleniyor, setYukleniyor] = useState(false)
+  const [hata, setHata] = useState('')
+  const router = useRouter()
+
+  useEffect(() => {
+    const oturum = localStorage.getItem('fm_oturum')
+    if (oturum) {
+      const kullanici = JSON.parse(oturum)
+      router.replace(kullanici.kullanici_tipi === 'Uye' ? '/bugun' : '/admin')
+    }
+  }, [router])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setHata('')
+    const telTemiz = tel.replace(/\D/g, '')
+    if (telTemiz.length < 10) {
+      setHata('Geçerli bir telefon numarası girin.')
+      return
+    }
+    setYukleniyor(true)
+    try {
+      const res = await fetch('/api/giris', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tel_no: telTemiz }),
+      })
+      const veri = await res.json()
+      if (!res.ok) {
+        setHata(veri.hata)
+        return
+      }
+      localStorage.setItem('fm_oturum', JSON.stringify(veri.kullanici))
+      router.push(veri.kullanici.kullanici_tipi === 'Uye' ? '/bugun' : '/admin')
+    } catch {
+      setHata('Bağlantı hatası. Lütfen tekrar deneyin.')
+    } finally {
+      setYukleniyor(false)
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
+
+        {/* Logo / Başlık */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-600 rounded-2xl mb-4">
+            <span className="text-3xl">📖</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-800">Furkan Meclisi</h1>
+          <p className="text-slate-500 mt-1 text-sm">Hatim Takip</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Telefon Numarası
+          </label>
+          <input
+            type="tel"
+            inputMode="numeric"
+            placeholder="05XX XXX XX XX"
+            value={tel}
+            onChange={e => setTel(telFormatla(e.target.value))}
+            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-lg tracking-wider focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            autoComplete="tel"
+          />
+
+          {hata && (
+            <p className="mt-3 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+              {hata}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={yukleniyor}
+            className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-semibold py-3 rounded-xl transition-colors"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+            {yukleniyor ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+          </button>
+        </form>
+
+        <p className="text-center text-xs text-slate-400 mt-6">
+          Numaranız kayıtlı değilse yöneticinizle iletişime geçin.
+        </p>
+      </div>
+    </main>
+  )
 }
