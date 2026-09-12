@@ -40,7 +40,16 @@ export async function POST(req: NextRequest) {
       .maybeSingle()
 
     if (!kullanici) {
-      return NextResponse.json({ hata: 'Kullanıcı bulunamadı.' }, { status: 401 })
+      // Debug: aktif filtresi olmadan kontrol et
+      const { data: debug } = await supabase
+        .from('kullanicilar')
+        .select('id, ad_soyad, aktif, kullanici_tipi')
+        .eq('id', kullanici_id)
+        .maybeSingle()
+      const detay = debug
+        ? `Kayıt var ama aktif=${debug.aktif}, tip=${debug.kullanici_tipi}`
+        : `ID bulunamadı: ${kullanici_id}`
+      return NextResponse.json({ hata: `Kullanıcı bulunamadı. [${detay}]` }, { status: 401 })
     }
 
     const girilenPin = String(pin).padStart(4, '0')
