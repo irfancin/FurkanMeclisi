@@ -31,7 +31,7 @@ export default function AdminRaporPage() {
   const [aktifGrup, setAktifGrup] = useState<string>('')
   const [rapor, setRapor] = useState<Rapor | null>(null)
   const [hata, setHata] = useState('')
-  const [yukleniyor, setYukleniyor] = useState(true)
+  const [yukleniyor, setYukleniyor] = useState(false)
 
   // Grupları yükle
   useEffect(() => {
