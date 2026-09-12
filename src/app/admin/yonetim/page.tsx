@@ -269,7 +269,7 @@ export default function YonetimPage() {
                             // Yeni tur oluşturulmuş ama başlamadı → önceki tamamlandı
                             return (
                               <p className="text-xs text-slate-400 leading-relaxed">
-                                <span className="text-slate-500 font-medium">Tamamlanan Tur:</span> {onceki.tur_no} · {fmtTarih(onceki.baslangic_tarihi)} – {fmtTarih(onceki.bitis_tarihi)}
+                                <span className="text-emerald-700 font-bold">Tamamlanan Tur:</span> {onceki.tur_no} · {fmtTarih(onceki.baslangic_tarihi)} – {fmtTarih(onceki.bitis_tarihi)}
                                 <br />
                                 <span className="text-emerald-600 font-medium">Yeni Tur Başlangıç:</span> {fmtTarihUzun(sonDonem.baslangic_tarihi)}
                               </p>
@@ -277,7 +277,7 @@ export default function YonetimPage() {
                           } else if (tamamlandi) {
                             return (
                               <p className="text-xs text-slate-400 leading-relaxed">
-                                <span className="text-slate-500 font-medium">Tamamlanan Tur:</span> {sonDonem.tur_no} · {fmtTarih(sonDonem.baslangic_tarihi)} – {fmtTarih(sonDonem.bitis_tarihi)}
+                                <span className="text-emerald-700 font-bold">Tamamlanan Tur:</span> {sonDonem.tur_no} · {fmtTarih(sonDonem.baslangic_tarihi)} – {fmtTarih(sonDonem.bitis_tarihi)}
                                 <br />
                                 <span className="text-amber-500 font-medium">Yeni tur henüz başlatılmadı</span>
                               </p>
