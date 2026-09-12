@@ -3,6 +3,9 @@
 -- 1. Yonetici kullanicilar icin grup_id zorunluluğunu kaldir
 ALTER TABLE kullanicilar ALTER COLUMN grup_id DROP NOT NULL;
 
--- 2. Yonetici kullanici ekle (grup olmadan)
+-- 2. Yonetici kullanicilar ekle (grup olmadan)
 INSERT INTO kullanicilar (tel_no, ad_soyad, kullanici_tipi, aktif)
 VALUES ('05009999999', 'Sistem Yoneticisi', 'Sistem Bakim', true);
+
+INSERT INTO kullanicilar (tel_no, ad_soyad, kullanici_tipi, aktif)
+VALUES ('05325824032', 'Yonetici', 'Yonetici', true);
