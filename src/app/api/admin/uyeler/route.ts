@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
 
 // Üye güncelle
 export async function PATCH(req: NextRequest) {
-  const { id, ad_soyad, tel_no, kullanici_tipi } = await req.json()
+  const { id, ad_soyad, tel_no, kullanici_tipi, cuz_no, grup_id } = await req.json()
   if (!id) return NextResponse.json({ hata: 'Eksik parametre.' }, { status: 400 })
 
   const supabase = await createClient()
@@ -176,6 +176,35 @@ export async function PATCH(req: NextRequest) {
 
   const { error } = await supabase.from('kullanicilar').update(guncelleme).eq('id', id)
   if (error) return NextResponse.json({ hata: 'Güncelleme başarısız.' }, { status: 500 })
+
+  // Cüz güncellemesi — en son dönemdeki atamayı güncelle / ekle
+  if (cuz_no !== undefined && grup_id) {
+    const cuzNo = parseInt(String(cuz_no))
+    if (!isNaN(cuzNo) && cuzNo >= 1 && cuzNo <= 30) {
+      const { data: donem } = await supabase
+        .from('donemler')
+        .select('id')
+        .eq('grup_id', grup_id)
+        .order('tur_no', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (donem) {
+        const { data: mevcut } = await supabase
+          .from('donem_atamalari')
+          .select('id')
+          .eq('kullanici_id', id)
+          .eq('donem_id', donem.id)
+          .maybeSingle()
+
+        if (mevcut) {
+          await supabase.from('donem_atamalari').update({ cuz_no: cuzNo }).eq('id', mevcut.id)
+        } else {
+          await supabase.from('donem_atamalari').insert({ kullanici_id: id, donem_id: donem.id, cuz_no: cuzNo })
+        }
+      }
+    }
+  }
 
   return NextResponse.json({ basarili: true })
 }

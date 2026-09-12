@@ -122,7 +122,8 @@ export default function YonetimPage() {
       method: duzenleId ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(duzenleId
-        ? { id: duzenleId, ad_soyad: uyeForm.ad_soyad, tel_no: tel, kullanici_tipi: uyeForm.kullanici_tipi }
+        ? { id: duzenleId, ad_soyad: uyeForm.ad_soyad, tel_no: tel, kullanici_tipi: uyeForm.kullanici_tipi,
+            cuz_no: uyeForm.cuz_no ? parseInt(uyeForm.cuz_no) : undefined, grup_id: seciliGrup }
         : {
             ad_soyad: uyeForm.ad_soyad,
             tel_no: tel,
@@ -517,16 +518,17 @@ export default function YonetimPage() {
                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                     </div>
                   </div>
-                  {!duzenleId && gruplar.find(g => g.id === seciliGrup)?.grup_tipi === 'Hatim' && (
+                  {gruplar.find(g => g.id === seciliGrup)?.grup_tipi === 'Hatim' && (
                     <div>
                       <label className="block text-xs font-medium text-slate-500 mb-1">
-                        Cüz No <span className="text-slate-400 font-normal">(1–30, boş bırakılırsa otomatik atanır)</span>
+                        Cüz No
+                        {!duzenleId && <span className="text-slate-400 font-normal"> (1–30, boş bırakılırsa otomatik atanır)</span>}
                       </label>
                       <input
                         type="number" min="1" max="30"
                         value={uyeForm.cuz_no}
                         onChange={e => setUyeForm(f => ({ ...f, cuz_no: e.target.value }))}
-                        placeholder="Otomatik"
+                        placeholder={duzenleId ? 'Mevcut cüz no' : 'Otomatik'}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       />
                     </div>
