@@ -49,6 +49,7 @@ export default function YonetimPage() {
   const [uyeKayit, setUyeKayit] = useState(false)
   const [uyeFormAcik, setUyeFormAcik] = useState(false)
   const [excelAcik, setExcelAcik] = useState(false)
+  const [tumUyeGoster, setTumUyeGoster] = useState(false)
 
   // Excel
   const [excelSonuc, setExcelSonuc] = useState<{
@@ -77,7 +78,7 @@ export default function YonetimPage() {
   }, [])
 
   useEffect(() => { gruplariYukle() }, [gruplariYukle])
-  useEffect(() => { if (seciliGrup) uyeleriYukle(seciliGrup) }, [seciliGrup, uyeleriYukle])
+  useEffect(() => { if (seciliGrup) { uyeleriYukle(seciliGrup); setTumUyeGoster(false) } }, [seciliGrup, uyeleriYukle])
 
   // --- Grup oluştur ---
   const grupOlustur = async (e: React.FormEvent) => {
@@ -204,7 +205,10 @@ export default function YonetimPage() {
     setTohum(false)
   }
 
-  const aktifUyeler = uyeler.filter(u => u.aktif)
+  const aktifUyeler = uyeler
+    .filter(u => u.aktif)
+    .sort((a, b) => (a.cuz_no ?? 999) - (b.cuz_no ?? 999))
+  const gosterilecekUyeler = tumUyeGoster ? aktifUyeler : aktifUyeler.slice(0, 5)
   const pasifUyeler = uyeler.filter(u => !u.aktif)
 
   return (
@@ -372,26 +376,39 @@ export default function YonetimPage() {
               </div>
               {aktifUyeler.length === 0
                 ? <p className="px-4 py-6 text-sm text-slate-400 text-center">Henüz üye yok.</p>
-                : <ul className="divide-y divide-slate-100">
-                    {aktifUyeler.map(u => (
-                      <li key={u.id} className="flex items-center justify-between px-4 py-3">
-                        <div>
-                          <p className="text-sm font-medium text-slate-700">{u.ad_soyad}</p>
-                          <p className="text-xs text-slate-400">
-                            {u.tel_no}
-                            {u.cuz_no ? ` · ${u.cuz_no}. Cüz` : ''}
-                            {u.kullanici_tipi !== 'Uye' ? ` · ${u.kullanici_tipi}` : ''}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={() => duzenlemeBasla(u)}
-                            className="text-xs text-blue-600 hover:underline">Düzenle</button>
-                          <button onClick={() => uyeSil(u)}
-                            className="text-xs text-red-500 hover:underline">Sil</button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                : <>
+                    <ul className="divide-y divide-slate-100">
+                      {gosterilecekUyeler.map(u => (
+                        <li key={u.id} className="flex items-center justify-between px-4 py-3">
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">{u.ad_soyad}</p>
+                            <p className="text-xs text-slate-400">
+                              {u.tel_no}
+                              {u.cuz_no ? ` · ${u.cuz_no}. Cüz` : ''}
+                              {u.kullanici_tipi !== 'Uye' ? ` · ${u.kullanici_tipi}` : ''}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => duzenlemeBasla(u)}
+                              className="text-xs text-blue-600 hover:underline">Düzenle</button>
+                            <button onClick={() => uyeSil(u)}
+                              className="text-xs text-red-500 hover:underline">Sil</button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                    {aktifUyeler.length > 5 && (
+                      <button
+                        onClick={() => setTumUyeGoster(g => !g)}
+                        className="w-full px-4 py-2.5 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-50 border-t border-slate-100 transition-colors flex items-center justify-center gap-1"
+                      >
+                        {tumUyeGoster
+                          ? <>Daha Az Göster <span className="text-slate-400">↑</span></>
+                          : <>Tümünü Göster ({aktifUyeler.length} üye) <span className="text-slate-400">↓</span></>
+                        }
+                      </button>
+                    )}
+                  </>
               }
               {pasifUyeler.length > 0 && (
                 <details className="border-t border-slate-100">
