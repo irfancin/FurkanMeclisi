@@ -13,7 +13,29 @@ export async function GET() {
     return NextResponse.json({ hata: 'Gruplar alınamadı.' }, { status: 500 })
   }
 
-  return NextResponse.json({ gruplar })
+  // Her grup için en son dönemi getir
+  const gruplarDetay = await Promise.all(
+    (gruplar ?? []).map(async g => {
+      const { data: donem } = await supabase
+        .from('donemler')
+        .select('tur_no, baslangic_tarihi, bitis_tarihi')
+        .eq('grup_id', g.id)
+        .order('tur_no', { ascending: false })
+        .limit(1)
+        .single()
+
+      const { count: uye_sayisi } = await supabase
+        .from('kullanicilar')
+        .select('*', { count: 'exact', head: true })
+        .eq('grup_id', g.id)
+        .eq('aktif', true)
+        .eq('kullanici_tipi', 'Uye')
+
+      return { ...g, donem: donem ?? null, uye_sayisi: uye_sayisi ?? 0 }
+    })
+  )
+
+  return NextResponse.json({ gruplar: gruplarDetay })
 }
 
 export async function POST(req: NextRequest) {

@@ -3,7 +3,18 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import * as XLSX from 'xlsx'
 
-interface Grup { id: string; grup_adi: string; grup_tipi: 'Hatim' | 'Zikir' }
+interface GrupDonem {
+  tur_no: number
+  baslangic_tarihi: string
+  bitis_tarihi: string
+}
+interface Grup {
+  id: string
+  grup_adi: string
+  grup_tipi: 'Hatim' | 'Zikir'
+  donem: GrupDonem | null
+  uye_sayisi: number
+}
 interface Uye {
   id: string; ad_soyad: string; tel_no: string
   kullanici_tipi: string; aktif: boolean
@@ -206,16 +217,29 @@ export default function YonetimPage() {
               : <ul className="divide-y divide-slate-100">
                   {gruplar.map(g => (
                     <li key={g.id} className="flex items-center justify-between px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-700">{g.grup_adi}</span>
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                          g.grup_tipi === 'Zikir'
-                            ? 'bg-violet-100 text-violet-700'
-                            : 'bg-emerald-50 text-emerald-700'
-                        }`}>{g.grup_tipi}</span>
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-slate-700">{g.grup_adi}</span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                            g.grup_tipi === 'Zikir'
+                              ? 'bg-violet-100 text-violet-700'
+                              : 'bg-emerald-50 text-emerald-700'
+                          }`}>{g.grup_tipi}</span>
+                        </div>
+                        {g.donem ? (
+                          <p className="text-xs text-slate-400">
+                            {g.donem.tur_no}. Tur · Başlangıç:{' '}
+                            {new Date(g.donem.baslangic_tarihi).toLocaleDateString('tr-TR', {
+                              day: 'numeric', month: 'long', year: 'numeric'
+                            })}
+                            {' '}· {g.uye_sayisi} üye
+                          </p>
+                        ) : (
+                          <p className="text-xs text-slate-300">Dönem yok</p>
+                        )}
                       </div>
                       <button onClick={() => { setSeciliGrup(g.id); setSekme('uyeler') }}
-                        className="text-xs text-emerald-600 hover:underline">Üyeleri gör →</button>
+                        className="text-xs text-emerald-600 hover:underline shrink-0 ml-3">Üyeleri gör →</button>
                     </li>
                   ))}
                 </ul>
