@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 
 interface Grup { id: string; grup_adi: string }
 interface Donem { id: string; tur_no: number; baslangic_tarihi: string; bitis_tarihi: string }
@@ -34,6 +34,18 @@ export default function RaporlarPage() {
   const [matris, setMatris] = useState<{ gunler: string[]; satirlar: MatrisSatir[] } | null>(null)
   const [turlar, setTurlar] = useState<Tur[]>([])
   const [yukleniyor, setYukleniyor] = useState(false)
+  const topScrollRef = useRef<HTMLDivElement>(null)
+  const tableScrollRef = useRef<HTMLDivElement>(null)
+  const [tableScrollWidth, setTableScrollWidth] = useState(0)
+
+  const onTopScroll = () => {
+    if (tableScrollRef.current && topScrollRef.current)
+      tableScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft
+  }
+  const onTableScroll = () => {
+    if (tableScrollRef.current && topScrollRef.current)
+      topScrollRef.current.scrollLeft = tableScrollRef.current.scrollLeft
+  }
 
   useEffect(() => {
     fetch('/api/admin/gruplar').then(r => r.json()).then(d => {
@@ -138,7 +150,24 @@ export default function RaporlarPage() {
           {yukleniyor && <p className="text-slate-400 text-sm">Yükleniyor...</p>}
 
           {matris && (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-auto">
+            <div className="bg-white rounded-xl border border-slate-200">
+              {/* Üst scroll bar */}
+              <div
+                ref={topScrollRef}
+                onScroll={onTopScroll}
+                className="overflow-x-auto"
+                style={{ height: 12 }}
+              >
+                <div style={{ width: tableScrollWidth || '100%', height: 1 }} />
+              </div>
+              <div
+                ref={el => {
+                  (tableScrollRef as React.MutableRefObject<HTMLDivElement | null>).current = el
+                  if (el) setTableScrollWidth(el.scrollWidth)
+                }}
+                onScroll={onTableScroll}
+                className="overflow-x-auto"
+              >
               <table className="text-xs min-w-max">
                 <thead>
                   <tr className="border-b border-slate-100">
@@ -168,6 +197,7 @@ export default function RaporlarPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </div>
