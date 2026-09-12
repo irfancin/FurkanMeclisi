@@ -119,7 +119,6 @@ export default function GirisPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative">
-      <span className="fixed bottom-3 right-4 text-xs text-slate-300 select-none">{VERSIYON}</span>
       <div className="w-full max-w-sm space-y-4">
 
         {/* Başlık */}
@@ -164,6 +163,9 @@ export default function GirisPage() {
               className="w-full text-xs text-blue-800 hover:text-blue-900 font-medium py-1">
               Yönetici Girişi
             </button>
+            <div className="flex justify-end">
+              <span className="text-xs text-slate-400 select-none">{VERSIYON}</span>
+            </div>
           </div>
         )}
 
