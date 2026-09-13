@@ -118,7 +118,7 @@ export default function YonetimPage() {
   }
 
   const parseCuzlar = (s: string) =>
-    s ? s.split(',').map(x => parseInt(x.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 30) : []
+    s ? [...new Set(s.split(',').map(x => parseInt(x.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 30))] : []
 
   // --- Yeni üye ekle (POST) ---
   const yeniUyeKaydet = async (e: React.FormEvent) => {
