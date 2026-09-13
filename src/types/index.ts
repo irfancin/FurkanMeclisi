@@ -40,6 +40,7 @@ export interface OkumaKaydi {
   id: string
   kullanici_id: string
   tarih: string
+  cuz_no: number | null
   okunma_saati: string
 }
 

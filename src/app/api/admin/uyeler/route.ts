@@ -5,7 +5,7 @@ function bugunTR() {
   return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date())
 }
 
-// Grupta aktif dönem için en küçük müsait cüz numarası
+// Grupta dönem içinde atanmamış ilk cüzü bul
 async function musaitCuzBul(supabase: Awaited<ReturnType<typeof import('@/lib/supabase/server').createClient>>, donem_id: string): Promise<number | null> {
   const { data } = await supabase
     .from('donem_atamalari')
@@ -25,7 +25,6 @@ export async function GET(req: NextRequest) {
   if (!grup_id) return NextResponse.json({ hata: 'Eksik parametre.' }, { status: 400 })
 
   const supabase = await createClient()
-  const bugun = bugunTR()
 
   const { data: uyeler } = await supabase
     .from('kullanicilar')
@@ -33,7 +32,7 @@ export async function GET(req: NextRequest) {
     .eq('grup_id', grup_id)
     .order('ad_soyad')
 
-  // En son dönem (aktif olup olmadığına bakılmaksızın)
+  // En son dönem
   const { data: donem } = await supabase
     .from('donemler')
     .select('id, tur_no')
@@ -42,19 +41,23 @@ export async function GET(req: NextRequest) {
     .limit(1)
     .maybeSingle()
 
-  // Cüz atamaları
-  let atamaMap = new Map<string, number>()
+  // Cüz atamaları — kullanıcı başına birden fazla olabilir
+  const atamaMap = new Map<string, number[]>()
   if (donem) {
     const { data: atamalar } = await supabase
       .from('donem_atamalari')
       .select('kullanici_id, cuz_no')
       .eq('donem_id', donem.id)
-    atamaMap = new Map((atamalar ?? []).map(a => [a.kullanici_id, a.cuz_no]))
+      .order('cuz_no')
+    for (const a of atamalar ?? []) {
+      if (!atamaMap.has(a.kullanici_id)) atamaMap.set(a.kullanici_id, [])
+      atamaMap.get(a.kullanici_id)!.push(a.cuz_no)
+    }
   }
 
   const liste = (uyeler ?? []).map(u => ({
     ...u,
-    cuz_no: atamaMap.get(u.id) ?? null,
+    cuz_lar: atamaMap.get(u.id) ?? [],
     tur_no: donem?.tur_no ?? null,
   }))
 
@@ -63,14 +66,13 @@ export async function GET(req: NextRequest) {
 
 // Yeni üye ekle
 export async function POST(req: NextRequest) {
-  const { tel_no, ad_soyad, grup_id, kullanici_tipi = 'Uye', cuz_no } = await req.json()
+  const { tel_no, ad_soyad, grup_id, kullanici_tipi = 'Uye', cuz_lar } = await req.json()
   if (!tel_no || !ad_soyad || !grup_id) {
     return NextResponse.json({ hata: 'Tüm alanlar zorunlu.' }, { status: 400 })
   }
 
   const supabase = await createClient()
 
-  // Telefon no tekrar kontrolü — aynı grup içinde
   const { data: mevcut } = await supabase
     .from('kullanicilar')
     .select('id, ad_soyad, gruplar(grup_adi)')
@@ -86,7 +88,6 @@ export async function POST(req: NextRequest) {
     }, { status: 409 })
   }
 
-  // Kullanıcıyı ekle
   const { data: yeniUye, error } = await supabase
     .from('kullanicilar')
     .insert({ tel_no, ad_soyad, grup_id, kullanici_tipi })
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ hata: 'Üye eklenemedi.' }, { status: 500 })
   }
 
-  // Aktif dönemde cüz ataması yap (yalnızca Hatim grubundaki Uye için)
+  // Cüz ataması (yalnızca Hatim grubundaki Uye için)
   if (kullanici_tipi === 'Uye') {
     const { data: grup } = await supabase
       .from('gruplar')
@@ -115,28 +116,38 @@ export async function POST(req: NextRequest) {
         .maybeSingle()
 
       if (donem) {
-        // Gelen cüz_no geçerliyse ve müsaitse onu kullan, değilse otomatik ata
-        const istenen = cuz_no && Number.isInteger(Number(cuz_no)) ? Number(cuz_no) : null
-        let atanacak: number | null = null
+        const istenenCuzler: number[] = Array.isArray(cuz_lar)
+          ? cuz_lar.filter((n: number) => Number.isInteger(n) && n >= 1 && n <= 30)
+          : []
 
-        if (istenen && istenen >= 1 && istenen <= 30) {
-          const { data: mevcut } = await supabase
+        if (istenenCuzler.length > 0) {
+          // Talep edilen cüzleri ata (müsait olanları)
+          const { data: mevcutAtamalar } = await supabase
             .from('donem_atamalari')
-            .select('id')
+            .select('cuz_no')
             .eq('donem_id', donem.id)
-            .eq('cuz_no', istenen)
-            .maybeSingle()
-          atanacak = mevcut ? await musaitCuzBul(supabase, donem.id) : istenen
-        } else {
-          atanacak = await musaitCuzBul(supabase, donem.id)
-        }
+          const atananSet = new Set((mevcutAtamalar ?? []).map(a => a.cuz_no))
 
-        if (atanacak) {
-          await supabase.from('donem_atamalari').insert({
-            kullanici_id: yeniUye.id,
-            donem_id: donem.id,
-            cuz_no: atanacak,
-          })
+          for (const cuz of istenenCuzler) {
+            if (!atananSet.has(cuz)) {
+              await supabase.from('donem_atamalari').insert({
+                kullanici_id: yeniUye.id,
+                donem_id: donem.id,
+                cuz_no: cuz,
+              })
+              atananSet.add(cuz)
+            }
+          }
+        } else {
+          // Otomatik: ilk müsait cüzü ata
+          const atanacak = await musaitCuzBul(supabase, donem.id)
+          if (atanacak) {
+            await supabase.from('donem_atamalari').insert({
+              kullanici_id: yeniUye.id,
+              donem_id: donem.id,
+              cuz_no: atanacak,
+            })
+          }
         }
       }
     }
@@ -147,12 +158,11 @@ export async function POST(req: NextRequest) {
 
 // Üye güncelle
 export async function PATCH(req: NextRequest) {
-  const { id, ad_soyad, tel_no, kullanici_tipi, cuz_no, grup_id } = await req.json()
+  const { id, ad_soyad, tel_no, kullanici_tipi, cuz_lar, grup_id } = await req.json()
   if (!id) return NextResponse.json({ hata: 'Eksik parametre.' }, { status: 400 })
 
   const supabase = await createClient()
 
-  // Telefon değişiyorsa tekrar kontrolü — aynı grup içinde
   if (tel_no) {
     const { data: mevcut } = await supabase
       .from('kullanicilar')
@@ -179,31 +189,33 @@ export async function PATCH(req: NextRequest) {
   const { error } = await supabase.from('kullanicilar').update(guncelleme).eq('id', id)
   if (error) return NextResponse.json({ hata: 'Güncelleme başarısız.' }, { status: 500 })
 
-  // Cüz güncellemesi — en son dönemdeki atamayı güncelle / ekle
-  if (cuz_no !== undefined && grup_id) {
-    const cuzNo = parseInt(String(cuz_no))
-    if (!isNaN(cuzNo) && cuzNo >= 1 && cuzNo <= 30) {
-      const { data: donem } = await supabase
-        .from('donemler')
-        .select('id')
-        .eq('grup_id', grup_id)
-        .order('tur_no', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+  // Cüz güncellemesi — tam değiştirme (mevcut cüzleri sil, yenilerini ekle)
+  if (cuz_lar !== undefined && grup_id) {
+    const cuzListesi: number[] = Array.isArray(cuz_lar)
+      ? cuz_lar.filter((n: number) => Number.isInteger(n) && n >= 1 && n <= 30)
+      : []
 
-      if (donem) {
-        const { data: mevcut } = await supabase
-          .from('donem_atamalari')
-          .select('id')
-          .eq('kullanici_id', id)
-          .eq('donem_id', donem.id)
-          .maybeSingle()
+    const { data: donem } = await supabase
+      .from('donemler')
+      .select('id')
+      .eq('grup_id', grup_id)
+      .order('tur_no', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-        if (mevcut) {
-          await supabase.from('donem_atamalari').update({ cuz_no: cuzNo }).eq('id', mevcut.id)
-        } else {
-          await supabase.from('donem_atamalari').insert({ kullanici_id: id, donem_id: donem.id, cuz_no: cuzNo })
-        }
+    if (donem) {
+      // Mevcut atamaları sil
+      await supabase
+        .from('donem_atamalari')
+        .delete()
+        .eq('kullanici_id', id)
+        .eq('donem_id', donem.id)
+
+      // Yeni atamaları ekle
+      if (cuzListesi.length > 0) {
+        await supabase.from('donem_atamalari').insert(
+          cuzListesi.map(cuz_no => ({ kullanici_id: id, donem_id: donem.id, cuz_no }))
+        )
       }
     }
   }

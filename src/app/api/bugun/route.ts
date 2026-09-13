@@ -49,69 +49,72 @@ export async function GET(req: NextRequest) {
     sonraki_bas = d.toISOString().split('T')[0]
   }
 
-  // Cüz ataması — aktif veya son dönem için
-  const { data: atama } = await supabase
+  // Cüz atamaları — birden fazla olabilir
+  const { data: atamalar } = await supabase
     .from('donem_atamalari')
     .select('cuz_no')
     .eq('kullanici_id', kullanici_id)
     .eq('donem_id', hedefDonem.id)
-    .single()
+    .order('cuz_no')
 
-  // Bu dönemdeki toplam okuma sayısı
-  const { count: okuma_sayisi } = await supabase
+  const cuz_listesi = (atamalar ?? []).map(a => a.cuz_no as number)
+
+  // Bu dönemdeki okuma kayıtları (cüz bazlı)
+  const { data: donem_okumalar } = await supabase
     .from('okuma_kayitlari')
-    .select('*', { count: 'exact', head: true })
+    .select('cuz_no, tarih, okunma_saati')
     .eq('kullanici_id', kullanici_id)
     .gte('tarih', hedefDonem.baslangic_tarihi)
     .lte('tarih', hedefDonem.bitis_tarihi)
 
-  // Bugün okuma kaydı (sadece aktif dönemde anlamlı)
-  const { data: bugun_kaydi } = aktif
-    ? await supabase
-        .from('okuma_kayitlari')
-        .select('okunma_saati')
-        .eq('kullanici_id', kullanici_id)
-        .eq('tarih', bugun)
-        .maybeSingle()
-    : { data: null }
+  // Bugün okuma kayıtları (sadece aktif dönemde anlamlı)
+  const bugun_okumalar = aktif ? (donem_okumalar ?? []).filter(o => o.tarih === bugun) : []
+
+  // Her cüz için durum bilgisi
+  const cuzler = cuz_listesi.map(cuz_no => {
+    const okunan_gun = (donem_okumalar ?? []).filter(o => o.cuz_no === cuz_no).length
+    const bugun_kaydi = bugun_okumalar.find(o => o.cuz_no === cuz_no) ?? null
+    return {
+      cuz_no,
+      okunan_gun,
+      bugun_okundu: !!bugun_kaydi,
+      bugun_okunma_saati: (bugun_kaydi as { okunma_saati?: string } | null)?.okunma_saati ?? null,
+    }
+  })
 
   // Önceki dönem bilgisi
   const oncekiDonemler = (tumDonemler ?? []).filter(d => d.id !== hedefDonem.id)
   const oncekiDonem = oncekiDonemler[0] ?? null
 
-  let onceki_cuz_no: number | null = null
-  let onceki_okuma_sayisi = 0
+  let onceki_cuzler: { cuz_no: number; okunan_gun: number }[] = []
 
   if (oncekiDonem) {
-    const { data: oncekiAtama } = await supabase
+    const { data: oncekiAtamalar } = await supabase
       .from('donem_atamalari')
       .select('cuz_no')
       .eq('kullanici_id', kullanici_id)
       .eq('donem_id', oncekiDonem.id)
-      .maybeSingle()
+      .order('cuz_no')
 
-    onceki_cuz_no = oncekiAtama?.cuz_no ?? null
-
-    const { count: oncekiOkuma } = await supabase
+    const { data: oncekiOkumalar } = await supabase
       .from('okuma_kayitlari')
-      .select('*', { count: 'exact', head: true })
+      .select('cuz_no')
       .eq('kullanici_id', kullanici_id)
       .gte('tarih', oncekiDonem.baslangic_tarihi)
       .lte('tarih', oncekiDonem.bitis_tarihi)
 
-    onceki_okuma_sayisi = oncekiOkuma ?? 0
+    onceki_cuzler = (oncekiAtamalar ?? []).map(a => ({
+      cuz_no: a.cuz_no as number,
+      okunan_gun: (oncekiOkumalar ?? []).filter(o => o.cuz_no === a.cuz_no).length,
+    }))
   }
 
   return NextResponse.json({
     donem: hedefDonem,
     aktif,
     sonraki_bas,
-    cuz_no: atama?.cuz_no ?? null,
-    okuma_sayisi: okuma_sayisi ?? 0,
-    bugun_okundu: !!bugun_kaydi,
-    bugun_okunma_saati: bugun_kaydi?.okunma_saati ?? null,
+    cuzler,
     onceki_donem: oncekiDonem,
-    onceki_cuz_no,
-    onceki_okuma_sayisi,
+    onceki_cuzler,
   })
 }

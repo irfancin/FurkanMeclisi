@@ -28,7 +28,7 @@ const bugunStr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' 
 interface Uye {
   id: string; ad_soyad: string; tel_no: string
   kullanici_tipi: string; aktif: boolean
-  cuz_no: number | null; tur_no: number | null
+  cuz_lar: number[]; tur_no: number | null
 }
 
 type Sekme = 'gruplar' | 'uyeler'
@@ -122,14 +122,19 @@ export default function YonetimPage() {
       method: duzenleId ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(duzenleId
-        ? { id: duzenleId, ad_soyad: uyeForm.ad_soyad, tel_no: tel, kullanici_tipi: uyeForm.kullanici_tipi,
-            cuz_no: uyeForm.cuz_no ? parseInt(uyeForm.cuz_no) : undefined, grup_id: seciliGrup }
+        ? {
+            id: duzenleId, ad_soyad: uyeForm.ad_soyad, tel_no: tel,
+            kullanici_tipi: uyeForm.kullanici_tipi, grup_id: seciliGrup,
+            cuz_lar: uyeForm.cuz_no
+              ? uyeForm.cuz_no.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 30)
+              : [],
+          }
         : {
-            ad_soyad: uyeForm.ad_soyad,
-            tel_no: tel,
-            kullanici_tipi: uyeForm.kullanici_tipi,
-            grup_id: seciliGrup,
-            cuz_no: uyeForm.cuz_no ? parseInt(uyeForm.cuz_no) : undefined,
+            ad_soyad: uyeForm.ad_soyad, tel_no: tel,
+            kullanici_tipi: uyeForm.kullanici_tipi, grup_id: seciliGrup,
+            cuz_lar: uyeForm.cuz_no
+              ? uyeForm.cuz_no.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 30)
+              : [],
           }
       ),
     })
@@ -147,7 +152,7 @@ export default function YonetimPage() {
 
   const duzenlemeBasla = (u: Uye) => {
     setDuzenleId(u.id)
-    setUyeForm({ ad_soyad: u.ad_soyad, tel_no: u.tel_no, kullanici_tipi: u.kullanici_tipi, cuz_no: String(u.cuz_no ?? '') })
+    setUyeForm({ ad_soyad: u.ad_soyad, tel_no: u.tel_no, kullanici_tipi: u.kullanici_tipi, cuz_no: u.cuz_lar.join(', ') })
     setUyeMesaj(null)
     setUyeFormAcik(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -219,7 +224,7 @@ export default function YonetimPage() {
 
   const aktifUyeler = uyeler
     .filter(u => u.aktif)
-    .sort((a, b) => (a.cuz_no ?? 999) - (b.cuz_no ?? 999))
+    .sort((a, b) => (a.cuz_lar[0] ?? 999) - (b.cuz_lar[0] ?? 999))
   const gosterilecekUyeler = tumUyeGoster ? aktifUyeler : aktifUyeler.slice(0, 5)
   const pasifUyeler = uyeler.filter(u => !u.aktif)
 
@@ -439,8 +444,8 @@ export default function YonetimPage() {
                               <p className="text-sm font-medium text-slate-700 truncate">{u.ad_soyad}</p>
                               <p className="text-xs text-slate-400">{u.tel_no}</p>
                             </div>
-                            <span className="text-sm font-semibold text-emerald-600 w-8 text-center shrink-0">
-                              {u.cuz_no ?? '—'}
+                            <span className="text-xs font-semibold text-emerald-600 text-right shrink-0 min-w-[32px]">
+                              {u.cuz_lar.length > 0 ? u.cuz_lar.join(', ') : '—'}
                             </span>
                             <div className="flex gap-1 shrink-0 w-14 justify-end">
                               <button onClick={() => duzenlemeBasla(u)}
@@ -522,13 +527,13 @@ export default function YonetimPage() {
                     <div>
                       <label className="block text-xs font-medium text-slate-500 mb-1">
                         Cüz No
-                        {!duzenleId && <span className="text-slate-400 font-normal"> (1–30, boş bırakılırsa otomatik atanır)</span>}
+                        <span className="text-slate-400 font-normal"> (birden fazlaysa virgülle: 5, 9)</span>
                       </label>
                       <input
-                        type="number" min="1" max="30"
+                        type="text"
                         value={uyeForm.cuz_no}
                         onChange={e => setUyeForm(f => ({ ...f, cuz_no: e.target.value }))}
-                        placeholder={duzenleId ? 'Mevcut cüz no' : 'Otomatik'}
+                        placeholder={duzenleId ? 'ör: 5 veya 5, 9' : 'Boş bırakılırsa otomatik'}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       />
                     </div>

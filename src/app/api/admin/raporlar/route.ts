@@ -34,11 +34,12 @@ export async function GET(req: NextRequest) {
 
   // --- KPI ---
   if (tip === 'kpi') {
-    // Bugün toplam okuma oranı
-    const { count: bugun_okuyan } = await supabase
+    // Bugün okuyan kullanıcı sayısı (distinct) — çoklu cüz şişirmesini önler
+    const { data: bugun_okuyanlar } = await supabase
       .from('okuma_kayitlari')
-      .select('*', { count: 'exact', head: true })
+      .select('kullanici_id')
       .eq('tarih', bugun)
+    const bugun_okuyan = new Set((bugun_okuyanlar ?? []).map(o => o.kullanici_id)).size
 
     const { count: toplam_aktif_uye } = await supabase
       .from('kullanicilar')
@@ -76,13 +77,14 @@ export async function GET(req: NextRequest) {
 
     if (tumOkumalar && tumUyeler) {
       const uyelMap = new Map(tumUyeler.map(u => [u.id, u.ad_soyad]))
-      const okumaGruplari = new Map<string, string[]>()
+      // Distinct tarihler — çoklu cüz olan günde bir kez sayılsın
+      const okumaGruplari = new Map<string, Set<string>>()
       for (const o of tumOkumalar) {
-        if (!okumaGruplari.has(o.kullanici_id)) okumaGruplari.set(o.kullanici_id, [])
-        okumaGruplari.get(o.kullanici_id)!.push(o.tarih)
+        if (!okumaGruplari.has(o.kullanici_id)) okumaGruplari.set(o.kullanici_id, new Set())
+        okumaGruplari.get(o.kullanici_id)!.add(o.tarih)
       }
-      for (const [uid, tarihler] of okumaGruplari) {
-        const seri = enUzunSeri(tarihler)
+      for (const [uid, tarihSet] of okumaGruplari) {
+        const seri = enUzunSeri([...tarihSet])
         if (seri > enUzunGun) { enUzunGun = seri; enUzunKisi = uyelMap.get(uid) ?? '' }
       }
     }
@@ -139,13 +141,14 @@ export async function GET(req: NextRequest) {
     const { data: okumalar } = uye_idler.length > 0
       ? await supabase
           .from('okuma_kayitlari')
-          .select('kullanici_id, tarih')
+          .select('kullanici_id, tarih, cuz_no')
           .in('kullanici_id', uye_idler)
           .gte('tarih', donem.baslangic_tarihi)
           .lte('tarih', donem.bitis_tarihi)
       : { data: [] }
 
-    const okumaSet = new Set((okumalar ?? []).map(o => `${o.kullanici_id}_${o.tarih}`))
+    // Anahtar: "kullanici_id_tarih_cuz_no" — çoklu cüz desteği
+    const okumaSet = new Set((okumalar ?? []).map(o => `${o.kullanici_id}_${o.tarih}_${o.cuz_no}`))
 
     // 30 günlük tarih listesi
     const gunler: string[] = []
@@ -160,8 +163,8 @@ export async function GET(req: NextRequest) {
       kullanici_id: u.kullanici_id,
       ad_soyad: u.ad_soyad,
       cuz_no: u.cuz_no,
-      gunler: gunler.map(g => ({ tarih: g, okudu: okumaSet.has(`${u.kullanici_id}_${g}`) })),
-      toplam: gunler.filter(g => okumaSet.has(`${u.kullanici_id}_${g}`)).length,
+      gunler: gunler.map(g => ({ tarih: g, okudu: okumaSet.has(`${u.kullanici_id}_${g}_${u.cuz_no}`) })),
+      toplam: gunler.filter(g => okumaSet.has(`${u.kullanici_id}_${g}_${u.cuz_no}`)).length,
     }))
 
     return NextResponse.json({ donem, gunler, satirlar })
@@ -197,10 +200,12 @@ export async function GET(req: NextRequest) {
       // donem_atamalari boşsa grubun aktif üyelerini kullan
       let uye_idler: string[]
       let uye_sayisi: number
+      let atama_sayisi: number  // çoklu cüz için toplam atama satırı
 
       if (atamalar && atamalar.length > 0) {
-        uye_idler = atamalar.map(a => a.kullanici_id)
-        uye_sayisi = atamalar.length
+        uye_idler = [...new Set(atamalar.map(a => a.kullanici_id))]
+        uye_sayisi = uye_idler.length
+        atama_sayisi = atamalar.length  // multi-cüz varsa > uye_sayisi
       } else {
         const { data: aktifUyeler } = await supabase
           .from('kullanicilar')
@@ -210,9 +215,11 @@ export async function GET(req: NextRequest) {
           .eq('kullanici_tipi', 'Uye')
         uye_idler = (aktifUyeler ?? []).map(u => u.id)
         uye_sayisi = uye_idler.length
+        atama_sayisi = uye_sayisi
       }
 
-      const mumkun_okuma = uye_sayisi * 30
+      // Her (kullanici × cüz) çifti için 30 gün hedef
+      const mumkun_okuma = atama_sayisi * 30
 
       const { count: gerceklesen } = uye_idler.length > 0
         ? await supabase
@@ -229,7 +236,8 @@ export async function GET(req: NextRequest) {
 
       return {
         ...d,
-        uye_sayisi,
+        uye_sayisi,        // distinct kullanıcı sayısı
+        atama_sayisi,      // toplam (kullanici × cüz) çifti
         tamamlanma_yuzdesi: tamamlanma,
       }
     }))

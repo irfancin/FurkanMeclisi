@@ -7,9 +7,9 @@ function bugunTR() {
 
 // Bugün okudum işareti
 export async function POST(req: NextRequest) {
-  const { kullanici_id } = await req.json()
+  const { kullanici_id, cuz_no } = await req.json()
 
-  if (!kullanici_id) {
+  if (!kullanici_id || cuz_no === undefined) {
     return NextResponse.json({ hata: 'Eksik parametre.' }, { status: 400 })
   }
 
@@ -18,7 +18,10 @@ export async function POST(req: NextRequest) {
 
   const { error } = await supabase
     .from('okuma_kayitlari')
-    .upsert({ kullanici_id, tarih: bugun }, { onConflict: 'kullanici_id,tarih' })
+    .upsert(
+      { kullanici_id, tarih: bugun, cuz_no },
+      { onConflict: 'kullanici_id,tarih,cuz_no' }
+    )
 
   if (error) {
     return NextResponse.json({ hata: 'Kayıt sırasında hata oluştu.' }, { status: 500 })
@@ -27,11 +30,11 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ basarili: true })
 }
 
-// Geri al — yalnızca bugünkü kaydı siler
+// Geri al — belirtilen cüzün bugünkü kaydını siler
 export async function DELETE(req: NextRequest) {
-  const { kullanici_id } = await req.json()
+  const { kullanici_id, cuz_no } = await req.json()
 
-  if (!kullanici_id) {
+  if (!kullanici_id || cuz_no === undefined) {
     return NextResponse.json({ hata: 'Eksik parametre.' }, { status: 400 })
   }
 
@@ -43,6 +46,7 @@ export async function DELETE(req: NextRequest) {
     .delete()
     .eq('kullanici_id', kullanici_id)
     .eq('tarih', bugun)
+    .eq('cuz_no', cuz_no)
 
   if (error) {
     return NextResponse.json({ hata: 'Geri alma sırasında hata oluştu.' }, { status: 500 })

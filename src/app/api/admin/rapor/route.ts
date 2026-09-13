@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  // Aktif dönem var — normal akış
+  // Aktif dönem var
   const { data: uyeler } = await supabase
     .from('kullanicilar')
     .select('id, ad_soyad, tel_no')
@@ -77,52 +77,61 @@ export async function GET(req: NextRequest) {
 
   const uye_idler = uyeler.map(u => u.id)
 
-  const { data: bugun_okumalar } = await supabase
-    .from('okuma_kayitlari')
-    .select('kullanici_id')
-    .in('kullanici_id', uye_idler)
-    .eq('tarih', bugun)
-
-  const okuyanSet = new Set((bugun_okumalar ?? []).map(o => o.kullanici_id))
-
+  // Cüz atamaları — kullanici başına birden fazla olabilir
   const { data: atamalar } = await supabase
     .from('donem_atamalari')
     .select('kullanici_id, cuz_no')
     .in('kullanici_id', uye_idler)
     .eq('donem_id', donem.id)
+    .order('cuz_no')
 
-  const atamaMap = new Map((atamalar ?? []).map(a => [a.kullanici_id, a.cuz_no]))
+  // Bugünkü okuma kayıtları (cüz bazlı)
+  const { data: bugun_okumalar } = await supabase
+    .from('okuma_kayitlari')
+    .select('kullanici_id, cuz_no')
+    .in('kullanici_id', uye_idler)
+    .eq('tarih', bugun)
 
-  const liste = uyeler.map(u => ({
-    id: u.id,
-    ad_soyad: u.ad_soyad,
-    tel_no: u.tel_no,
-    cuz_no: atamaMap.get(u.id) ?? null,
-    okudu: okuyanSet.has(u.id),
-  }))
+  // Set: "kullanici_id_cuz_no" → bugün okundu mu?
+  const okunanSet = new Set((bugun_okumalar ?? []).map(o => `${o.kullanici_id}_${o.cuz_no}`))
+
+  // Liste: her (kullanıcı × cüz) çifti için bir satır
+  const uyeMap = new Map(uyeler.map(u => [u.id, u]))
+  const liste = (atamalar ?? []).map(a => {
+    const u = uyeMap.get(a.kullanici_id)!
+    return {
+      id: a.kullanici_id,
+      ad_soyad: u.ad_soyad,
+      tel_no: u.tel_no,
+      cuz_no: a.cuz_no,
+      okudu: okunanSet.has(`${a.kullanici_id}_${a.cuz_no}`),
+    }
+  })
 
   const basMs = new Date(donem.baslangic_tarihi).getTime()
   const bugunMs = new Date(bugun).getTime()
   const gun_no = Math.min(Math.floor((bugunMs - basMs) / (1000 * 60 * 60 * 24)) + 1, 30)
   const gecen_gun = Math.max(gun_no, 1)
 
+  // Eksik gün hesabı: kullanıcı bazlı, distinct tarih sayısına göre
   const { data: tumOkumalar } = await supabase
     .from('okuma_kayitlari')
-    .select('kullanici_id')
+    .select('kullanici_id, tarih')
     .in('kullanici_id', uye_idler)
     .gte('tarih', donem.baslangic_tarihi)
     .lte('tarih', bugun)
 
-  const okumaSayilari = new Map<string, number>()
-  uye_idler.forEach(id => okumaSayilari.set(id, 0))
-  ;(tumOkumalar ?? []).forEach(o => {
-    okumaSayilari.set(o.kullanici_id, (okumaSayilari.get(o.kullanici_id) ?? 0) + 1)
-  })
+  // Her kullanıcı için distinct okunan gün sayısı
+  const okumaTarihPerUser = new Map<string, Set<string>>()
+  for (const o of tumOkumalar ?? []) {
+    if (!okumaTarihPerUser.has(o.kullanici_id)) okumaTarihPerUser.set(o.kullanici_id, new Set())
+    okumaTarihPerUser.get(o.kullanici_id)!.add(o.tarih)
+  }
 
   const eksik_top3 = uyeler
     .map(u => ({
       ad_soyad: u.ad_soyad,
-      eksik_gun: gecen_gun - (okumaSayilari.get(u.id) ?? 0),
+      eksik_gun: gecen_gun - (okumaTarihPerUser.get(u.id)?.size ?? 0),
     }))
     .filter(u => u.eksik_gun > 0)
     .sort((a, b) => b.eksik_gun - a.eksik_gun)
@@ -132,7 +141,7 @@ export async function GET(req: NextRequest) {
     donem,
     aktif: true,
     uyeler: liste,
-    okuyanlar: okuyanSet.size,
+    okuyanlar: okunanSet.size,
     toplam: liste.length,
     gun_no,
     toplam_gun: 30,
