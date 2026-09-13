@@ -53,12 +53,17 @@ export default function YonetimPage() {
   const [tohum, setTohum] = useState(false)
   const [tohumSonuc, setTohumSonuc] = useState<{ toplamKayit: number; sonuclar: { grup: string; gun: number; uye: number; eklenen: number }[] } | null>(null)
 
-  // Üye formu
+  // Üye düzenleme formu (edit)
   const [uyeForm, setUyeForm] = useState({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' })
   const [duzenleId, setDuzenleId] = useState<string | null>(null)
   const [uyeMesaj, setUyeMesaj] = useState<{ tip: 'ok' | 'hata'; metin: string } | null>(null)
   const [uyeKayit, setUyeKayit] = useState(false)
-  const [uyeFormAcik, setUyeFormAcik] = useState(false)
+
+  // Yeni üye ekleme formu (add) — edit'ten bağımsız
+  const [yeniForm, setYeniForm] = useState({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' })
+  const [yeniFormAcik, setYeniFormAcik] = useState(false)
+  const [yeniFormMesaj, setYeniFormMesaj] = useState<{ tip: 'ok' | 'hata'; metin: string } | null>(null)
+  const [yeniFormKayit, setYeniFormKayit] = useState(false)
   const [excelAcik, setExcelAcik] = useState(false)
   const [tumUyeGoster, setTumUyeGoster] = useState(false)
 
@@ -112,39 +117,56 @@ export default function YonetimPage() {
     setGrupKayit(false)
   }
 
-  // --- Üye kaydet (ekle / güncelle) ---
+  const parseCuzlar = (s: string) =>
+    s ? s.split(',').map(x => parseInt(x.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 30) : []
+
+  // --- Yeni üye ekle (POST) ---
+  const yeniUyeKaydet = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setYeniFormKayit(true); setYeniFormMesaj(null)
+    const tel = yeniForm.tel_no.replace(/\D/g, '')
+    const res = await fetch('/api/admin/uyeler', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ad_soyad: yeniForm.ad_soyad, tel_no: tel,
+        kullanici_tipi: yeniForm.kullanici_tipi, grup_id: seciliGrup,
+        cuz_lar: parseCuzlar(yeniForm.cuz_no),
+      }),
+    })
+    const d = await res.json()
+    if (!res.ok) {
+      setYeniFormMesaj({ tip: 'hata', metin: d.hata })
+    } else {
+      setYeniFormMesaj({ tip: 'ok', metin: 'Üye eklendi.' })
+      setYeniForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' })
+      await uyeleriYukle(seciliGrup)
+    }
+    setYeniFormKayit(false)
+  }
+
+  // --- Üye güncelle (PATCH) ---
   const uyeKaydet = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!duzenleId) return
     setUyeKayit(true); setUyeMesaj(null)
     const tel = uyeForm.tel_no.replace(/\D/g, '')
-
     const res = await fetch('/api/admin/uyeler', {
-      method: duzenleId ? 'PATCH' : 'POST',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(duzenleId
-        ? {
-            id: duzenleId, ad_soyad: uyeForm.ad_soyad, tel_no: tel,
-            kullanici_tipi: uyeForm.kullanici_tipi, grup_id: seciliGrup,
-            cuz_lar: uyeForm.cuz_no
-              ? uyeForm.cuz_no.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 30)
-              : [],
-          }
-        : {
-            ad_soyad: uyeForm.ad_soyad, tel_no: tel,
-            kullanici_tipi: uyeForm.kullanici_tipi, grup_id: seciliGrup,
-            cuz_lar: uyeForm.cuz_no
-              ? uyeForm.cuz_no.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 30)
-              : [],
-          }
-      ),
+      body: JSON.stringify({
+        id: duzenleId, ad_soyad: uyeForm.ad_soyad, tel_no: tel,
+        kullanici_tipi: uyeForm.kullanici_tipi, grup_id: seciliGrup,
+        cuz_lar: parseCuzlar(uyeForm.cuz_no),
+      }),
     })
     const d = await res.json()
     if (!res.ok) {
       setUyeMesaj({ tip: 'hata', metin: d.hata })
     } else {
-      setUyeMesaj({ tip: 'ok', metin: duzenleId ? 'Güncellendi.' : 'Üye eklendi.' })
-      setUyeForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' })
+      setUyeMesaj({ tip: 'ok', metin: 'Güncellendi.' })
       setDuzenleId(null)
+      setUyeForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' })
       await uyeleriYukle(seciliGrup)
     }
     setUyeKayit(false)
@@ -154,7 +176,6 @@ export default function YonetimPage() {
     setDuzenleId(u.id)
     setUyeForm({ ad_soyad: u.ad_soyad, tel_no: u.tel_no, kullanici_tipi: u.kullanici_tipi, cuz_no: u.cuz_lar.join(', ') })
     setUyeMesaj(null)
-    setUyeFormAcik(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -494,33 +515,31 @@ export default function YonetimPage() {
             </div>
           )}
 
-          {/* Üye formu — katlanabilir */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => { setUyeFormAcik(a => !a); if (duzenleId) { setDuzenleId(null); setUyeForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' }); setUyeMesaj(null) } }}
-              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50 transition-colors"
-            >
-              <span className="font-semibold text-slate-700">
-                {duzenleId ? 'Üyeyi Düzenle' : 'Yeni Üye Ekle'}
-              </span>
-              <span className={`text-slate-400 text-lg transition-transform duration-200 ${uyeFormAcik ? 'rotate-180' : ''}`}>⌄</span>
-            </button>
-            {uyeFormAcik && (
-              <div className="px-5 pb-5 border-t border-slate-100">
+          {/* Düzenleme formu — yalnızca düzenleme modunda görünür */}
+          {duzenleId && (
+            <div className="bg-blue-50 rounded-xl border border-blue-200 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-blue-200">
+                <span className="font-semibold text-blue-800">✏️ Üyeyi Düzenle</span>
+                <button type="button"
+                  onClick={() => { setDuzenleId(null); setUyeForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' }); setUyeMesaj(null) }}
+                  className="text-blue-400 hover:text-blue-600 text-xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-100">
+                  ×
+                </button>
+              </div>
+              <div className="px-5 pb-5">
                 <form onSubmit={uyeKaydet} className="space-y-3 pt-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-slate-500 mb-1">Ad Soyad</label>
                       <input value={uyeForm.ad_soyad} onChange={e => setUyeForm(f => ({ ...f, ad_soyad: e.target.value }))}
                         placeholder="Ahmet Yılmaz" required
-                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                        className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-500 mb-1">Telefon No</label>
                       <input value={uyeForm.tel_no} onChange={e => setUyeForm(f => ({ ...f, tel_no: e.target.value }))}
                         placeholder="05XXXXXXXXX" required
-                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                        className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
                     </div>
                   </div>
                   {gruplar.find(g => g.id === seciliGrup)?.grup_tipi === 'Hatim' && (
@@ -529,19 +548,16 @@ export default function YonetimPage() {
                         Cüz No
                         <span className="text-slate-400 font-normal"> (birden fazlaysa virgülle: 5, 9)</span>
                       </label>
-                      <input
-                        type="text"
-                        value={uyeForm.cuz_no}
+                      <input type="text" value={uyeForm.cuz_no}
                         onChange={e => setUyeForm(f => ({ ...f, cuz_no: e.target.value }))}
-                        placeholder={duzenleId ? 'ör: 5 veya 5, 9' : 'Boş bırakılırsa otomatik'}
-                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
+                        placeholder="ör: 5 veya 5, 9"
+                        className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
                     </div>
                   )}
                   <div>
                     <label className="block text-xs font-medium text-slate-500 mb-1">Kullanıcı Tipi</label>
                     <select value={uyeForm.kullanici_tipi} onChange={e => setUyeForm(f => ({ ...f, kullanici_tipi: e.target.value }))}
-                      className="border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      className="border border-blue-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                       <option value="Uye">Üye</option>
                       <option value="Yonetici">Yönetici</option>
                     </select>
@@ -553,16 +569,76 @@ export default function YonetimPage() {
                   )}
                   <div className="flex gap-2">
                     <button type="submit" disabled={uyeKayit}
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
-                      {uyeKayit ? 'Kaydediliyor...' : duzenleId ? 'Güncelle' : 'Üye Ekle'}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
+                      {uyeKayit ? 'Kaydediliyor...' : 'Güncelle'}
                     </button>
-                    {duzenleId && (
-                      <button type="button" onClick={() => { setDuzenleId(null); setUyeForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' }); setUyeMesaj(null) }}
-                        className="px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
-                        İptal
-                      </button>
-                    )}
+                    <button type="button"
+                      onClick={() => { setDuzenleId(null); setUyeForm({ ad_soyad: '', tel_no: '', kullanici_tipi: 'Uye', cuz_no: '' }); setUyeMesaj(null) }}
+                      className="px-4 py-2.5 border border-blue-300 rounded-lg text-sm text-blue-600 hover:bg-blue-100">
+                      İptal
+                    </button>
                   </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Yeni üye ekleme formu — her zaman mevcut, düzenleme formundan bağımsız */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setYeniFormAcik(a => !a)}
+              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50 transition-colors"
+            >
+              <span className="font-semibold text-slate-700">Yeni Üye Ekle</span>
+              <span className={`text-slate-400 text-lg transition-transform duration-200 ${yeniFormAcik ? 'rotate-180' : ''}`}>⌄</span>
+            </button>
+            {yeniFormAcik && (
+              <div className="px-5 pb-5 border-t border-slate-100">
+                <form onSubmit={yeniUyeKaydet} className="space-y-3 pt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Ad Soyad</label>
+                      <input value={yeniForm.ad_soyad} onChange={e => setYeniForm(f => ({ ...f, ad_soyad: e.target.value }))}
+                        placeholder="Ahmet Yılmaz" required
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Telefon No</label>
+                      <input value={yeniForm.tel_no} onChange={e => setYeniForm(f => ({ ...f, tel_no: e.target.value }))}
+                        placeholder="05XXXXXXXXX" required
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                  </div>
+                  {gruplar.find(g => g.id === seciliGrup)?.grup_tipi === 'Hatim' && (
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">
+                        Cüz No
+                        <span className="text-slate-400 font-normal"> (birden fazlaysa virgülle: 5, 9)</span>
+                      </label>
+                      <input type="text" value={yeniForm.cuz_no}
+                        onChange={e => setYeniForm(f => ({ ...f, cuz_no: e.target.value }))}
+                        placeholder="Boş bırakılırsa otomatik"
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Kullanıcı Tipi</label>
+                    <select value={yeniForm.kullanici_tipi} onChange={e => setYeniForm(f => ({ ...f, kullanici_tipi: e.target.value }))}
+                      className="border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      <option value="Uye">Üye</option>
+                      <option value="Yonetici">Yönetici</option>
+                    </select>
+                  </div>
+                  {yeniFormMesaj && (
+                    <p className={`text-sm px-3 py-2 rounded-lg ${yeniFormMesaj.tip === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                      {yeniFormMesaj.metin}
+                    </p>
+                  )}
+                  <button type="submit" disabled={yeniFormKayit}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
+                    {yeniFormKayit ? 'Kaydediliyor...' : 'Üye Ekle'}
+                  </button>
                 </form>
               </div>
             )}
