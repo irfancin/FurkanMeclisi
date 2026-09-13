@@ -67,20 +67,20 @@ export async function POST(req: NextRequest) {
       let geciciPin: string
 
       if ((grup?.grup_tipi ?? 'Hatim') === 'Hatim') {
-        const { data: atama } = await supabase
+        const { data: atamalar } = await supabase
           .from('donem_atamalari')
           .select('cuz_no')
           .eq('kullanici_id', kullanici_id)
           .eq('donem_id', sonDonem.id)
-          .maybeSingle()
+          .order('cuz_no', { ascending: true })
 
-        if (!atama) {
+        if (!atamalar || atamalar.length === 0) {
           return NextResponse.json({ hata: 'Cüz ataması bulunamadı.' }, { status: 401 })
         }
-        // Geçici PIN: tur_no 2 hane + cüz_no 2 hane
-        // Örn: tur 46, cüz 2 → "4602"
+        // Geçici PIN: tur_no 2 hane + en küçük cüz_no 2 hane
+        // Örn: tur 46, cüz 2 → "4602"; çok cüzlü → en küçük cüz kullanılır
         const turStr = String(sonDonem.tur_no).padStart(2, '0')
-        const cuzStr = String(atama.cuz_no).padStart(2, '0')
+        const cuzStr = String(atamalar[0].cuz_no).padStart(2, '0')
         geciciPin = turStr + cuzStr
       } else {
         geciciPin = '0000' // Zikir grubu için varsayılan

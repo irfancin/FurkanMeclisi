@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 const VERSIYON = 'v1.50'
 
 interface Grup { id: string; grup_adi: string }
-interface Uye { id: string; ad_soyad: string }
+interface Uye { id: string; ad_soyad: string; cuz_lar: number[] }
 type Adim = 'secim' | 'pin' | 'pin-ayarla' | 'yonetici'
 type GirisTipi = 'uye' | 'yonetici'
 
@@ -184,7 +184,11 @@ export default function GirisPage() {
                   <select value={seciliUye} onChange={e => setSeciliUye(e.target.value)}
                     className="w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="">Adınızı seçin...</option>
-                    {uyeler.map(u => <option key={u.id} value={u.id}>{u.ad_soyad}</option>)}
+                    {uyeler.map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.ad_soyad}{u.cuz_lar.length > 0 ? ` (Cüz: ${u.cuz_lar.join(', ')})` : ''}
+                      </option>
+                    ))}
                   </select>
                 </div>
               )}
