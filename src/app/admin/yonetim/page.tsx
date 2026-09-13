@@ -532,13 +532,13 @@ export default function YonetimPage() {
                     <div>
                       <label className="block text-xs font-medium text-slate-500 mb-1">Ad Soyad</label>
                       <input value={uyeForm.ad_soyad} onChange={e => setUyeForm(f => ({ ...f, ad_soyad: e.target.value }))}
-                        placeholder="Ahmet Yılmaz" required
+                        placeholder="Ahmet Yılmaz" required autoComplete="off"
                         className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-500 mb-1">Telefon No</label>
                       <input value={uyeForm.tel_no} onChange={e => setUyeForm(f => ({ ...f, tel_no: e.target.value }))}
-                        placeholder="05XXXXXXXXX" required
+                        placeholder="05XXXXXXXXX" required autoComplete="off"
                         className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
                     </div>
                   </div>
