@@ -9,7 +9,8 @@ Kur'an hatim grubunu yönetmek için geliştirilmiş mobil-öncelikli web uygula
 - **Deploy:** Vercel (otomatik CI/CD — main branch → production)
 - **Repo:** /home/irfan/FurkanMeclisi
 - **Başlatma (local):** `npm run dev` (port 3000)
-- **Güncel versiyon:** v1.50 (`VERSIYON` sabiti `src/app/page.tsx`'te)
+- **Güncel versiyon:** v1.51 (`VERSIYON` sabiti `src/app/page.tsx`'te)
+- **Yapılacaklar:** `yapilacaklar.md` — açık görevler burada takip edilir
 
 ---
 
@@ -57,7 +58,10 @@ FurkanMeclisi/
 │   ├── 002_grup_tipi.sql
 │   ├── 003_kullanici_grup_nullable.sql
 │   ├── 004_add_pin_column.sql
-│   └── 005_normalize_tel_no.sql
+│   ├── 005_normalize_tel_no.sql
+│   ├── 006_multi_cuz_atamalari.sql   # donem_atamalari unique: (kullanici+donem+cuz)
+│   └── 007_okuma_kayitlari_cuz_no.sql  # okuma_kayitlari.cuz_no + unique güncelleme
+├── yapilacaklar.md                    # Açık görevler + tamamlanan geçmiş
 └── public/
 ```
 
@@ -147,9 +151,11 @@ FurkanMeclisi/
 | Telefon tekrar kontrolünü global unique olarak almak | Sadece aynı grup içinde unique — başka gruplarda aynı tel olabilir |
 | Blob URL ile dosya indirme wait_for + `visible` state | `attached` state kullan (display:none olabilir) |
 | `donemler` sorgusunda aktif/pasif ayrımı | Yoktur — her zaman en son `tur_no` alınır |
-| `donem_atamalari`'nda `.single()` kullanmak | Bir kullanıcının birden fazla cüzü olabilir — `.order('cuz_no')` ile tüm satırları al |
+| `donem_atamalari`'nda `.single()` veya `.maybeSingle()` kullanmak | Bir kullanıcının birden fazla cüzü olabilir — `.order('cuz_no')` ile tüm satırları al; geçici PIN için `.order('cuz_no', { ascending: true })` ile en küçük cüzü kullan |
 | `okuma_kayitlari` sorgusuyla distinct gün saymak | `new Set(rows.map(o => o.tarih)).size` kullan — multi-cüz günde birden fazla satır oluşturur |
 | `okuma_kayitlari` upsert'te `onConflict: 'kullanici_id,tarih'` | Yeni constraint: `'kullanici_id,tarih,cuz_no'` |
+| `parseCuzlar` sonucunu doğrudan kullanmak | Önce `[...new Set(...)]` ile tekilleştir — duplicate cüz girişi donem_atamalari'nda çift satır oluşturur |
+| Düzenleme formunda `autoComplete` bırakmak | `autoComplete="off"` zorunlu — iOS Safari autofill tel_no alanını değiştirip sahte çakışma hatası üretir |
 
 ---
 
