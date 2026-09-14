@@ -9,7 +9,7 @@ Kur'an hatim grubunu yönetmek için geliştirilmiş mobil-öncelikli web uygula
 - **Deploy:** Vercel (otomatik CI/CD — main branch → production)
 - **Repo:** /home/irfan/FurkanMeclisi
 - **Başlatma (local):** `npm run dev` (port 3000)
-- **Güncel versiyon:** v1.51 (`VERSIYON` sabiti `src/app/page.tsx`'te)
+- **Güncel versiyon:** v1.52 (`VERSIYON` sabiti `src/app/page.tsx`'te)
 - **Yapılacaklar:** `yapilacaklar.md` — açık görevler burada takip edilir
 
 ---
@@ -77,7 +77,6 @@ FurkanMeclisi/
 | `donemler` | Tur periyotları — `grup_id`, `tur_no`, `baslangic_tarihi`, `bitis_tarihi`; `unique(grup_id, tur_no)` |
 | `donem_atamalari` | `kullanici_id × donem_id × cuz_no`; `unique(kullanici_id, donem_id, cuz_no)` — BİR kullanıcının aynı dönemde birden fazla cüzü olabilir (migration 006) |
 | `kullanicilar` | `tel_no` (unique, başında 0 yok), `ad_soyad`, `grup_id` (nullable — yönetici/sistem için), `kullanici_tipi` (Uye/Yonetici/Sistem Bakim), `aktif`, `pin` (nullable = ilk giriş yapılmamış) |
-| `donem_atamalari` | Kullanıcı × dönem × cüz_no ataması; `unique(kullanici_id, donem_id)` |
 | `okuma_kayitlari` | Günlük okuma; `cuz_no` kolonu eklendi (migration 007); `unique(kullanici_id, tarih, cuz_no)` — multi-cüz kullanıcı aynı günde birden fazla kayıt alabilir |
 | `giris_loglari` | Giriş zamanı, IP, cihaz |
 
@@ -156,6 +155,8 @@ FurkanMeclisi/
 | `okuma_kayitlari` upsert'te `onConflict: 'kullanici_id,tarih'` | Yeni constraint: `'kullanici_id,tarih,cuz_no'` |
 | `parseCuzlar` sonucunu doğrudan kullanmak | Önce `[...new Set(...)]` ile tekilleştir — duplicate cüz girişi donem_atamalari'nda çift satır oluşturur |
 | Düzenleme formunda `autoComplete` bırakmak | `autoComplete="off"` zorunlu — iOS Safari autofill tel_no alanını değiştirip sahte çakışma hatası üretir |
+| Test SQL'inde gerçek telefon numarası kullanmak | `999000000X` gibi açıkça uydurma numaralar kullan — gerçek DB'de aynı numara `aktif=false` ile kayıtlıysa `ON CONFLICT DO NOTHING` yeni kaydı sessizce atlar, eski pasif kayıt kalır |
+| Test SQL'inde `ON CONFLICT DO NOTHING` ile `aktif=true` garantilemek | `ON CONFLICT` çakışma varsa güncelleme yapmaz; `UPDATE SET aktif=true WHERE tel_no IN (...)` ekle VEYA temizleme SQL'ini önce çalıştırıp temiz INSERT yap |
 
 ---
 

@@ -22,6 +22,12 @@
 - [x] `bugun/page.tsx` → tek cüz eski tasarım; çoklu → mini kart + "Hepsini Okudum"
 - [x] `yonetim/page.tsx` → virgüllü cüz girişi, `cuz_lar` array
 
+### 2026-09-14 — Test Senaryosu
+
+- [x] `test_senaryosu.md` oluşturuldu — kurulum SQL + 5 kullanıcı + 5 senaryo + temizleme SQL
+- [x] **aktif=false sorunu:** `ON CONFLICT DO NOTHING` gerçek kullanıcı kaydını atlamıştı; tel numaraları `999000000X` formatına güncellendi
+- [x] Commit: `3ba5744`
+
 ### 2026-09-14 — Hatırlatma Butonu (v1.52)
 
 - [x] **Toplu hatırlatma:** Okumayanlar başlığına `📋 Hatırlatma Metnini Kopyala` butonu eklendi
