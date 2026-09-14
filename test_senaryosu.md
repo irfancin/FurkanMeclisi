@@ -26,6 +26,8 @@ VALUES (
 ON CONFLICT (grup_id, tur_no) DO NOTHING;
 
 -- 3. Kullanıcılar (1 yönetici + 3 üye + 1 çift cüzlü üye)
+-- NOT: Aynı tel_no ile pasif kayıt varsa ON CONFLICT güncelleme yapmaz;
+--      INSERT sonrasında aktif=true garantilemek için UPDATE eklendi.
 INSERT INTO kullanicilar (id, tel_no, ad_soyad, grup_id, kullanici_tipi, aktif)
 VALUES
   ('00000000-0000-0000-0000-000000000101', '5001112233', 'Test Yönetici', '00000000-0000-0000-0000-000000000001', 'Yonetici', true),
@@ -34,6 +36,16 @@ VALUES
   ('00000000-0000-0000-0000-000000000104', '5004445566', 'Mehmet Demir',  '00000000-0000-0000-0000-000000000001', 'Uye',      true),
   ('00000000-0000-0000-0000-000000000105', '5005556677', 'Zeynep Arslan', '00000000-0000-0000-0000-000000000001', 'Uye',      true)
 ON CONFLICT (tel_no) DO NOTHING;
+
+-- Aynı tel_no ile pasif kayıt varsa aktif yap
+UPDATE kullanicilar SET aktif = true
+WHERE id IN (
+  '00000000-0000-0000-0000-000000000101',
+  '00000000-0000-0000-0000-000000000102',
+  '00000000-0000-0000-0000-000000000103',
+  '00000000-0000-0000-0000-000000000104',
+  '00000000-0000-0000-0000-000000000105'
+);
 
 -- 4. Cüz atamaları
 INSERT INTO donem_atamalari (kullanici_id, donem_id, cuz_no)
