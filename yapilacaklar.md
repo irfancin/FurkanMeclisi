@@ -2,30 +2,7 @@
 
 ## Açık Görevler
 
-### 2026-09-14 — Hatırlatma Bildirimi (Seçenek 2)
-
-**Görev:** Admin rapor ekranına "Toplu Hatırlatma Metni Oluştur" butonu ekle
-
-**Motivasyon:** Okumalar her gün saat 20:00'e kadar yapılıp bildirilmesi gerekiyor.
-Saat 20:00 civarında o gün okumamış üyelerin listesi tek tıkla panoya kopyalanacak;
-yönetici bunu WhatsApp grubuna yapıştırır.
-
-**Detay:**
-- Rapor ekranında okumayanlar listesinin üstüne buton ekle
-- Tıklanınca aşağıdaki formatta metin panoya kopyalanır:
-  ```
-  📖 Furkan Meclisi — [Grup Adı]
-  Bugün (14 Eylül) henüz okuma girişi yapmayanlar:
-  • Ahmet Yılmaz (Cüz: 5)
-  • Fatma Kaya (Cüz: 12)
-  ...
-  Lütfen okumalarınızı tamamlayıp giriş yapınız 🤲
-  ```
-- Buton: "📋 Hatırlatma Metnini Kopyala" — kopyalama sonrası "✅ Kopyalandı!" göster (2sn)
-- Sadece o günün okumayan listesinden üretilir
-- Dosya: `src/app/admin/raporlar/page.tsx` (rapor UI bileşeni)
-
-**Tahmini süre:** 1-2 saat
+*Şu an açık görev yok.*
 
 ---
 
@@ -44,6 +21,13 @@ yönetici bunu WhatsApp grubuna yapıştırır.
 - [x] `/api/admin/raporlar` matris → uid_tarih_cuz_no anahtar
 - [x] `bugun/page.tsx` → tek cüz eski tasarım; çoklu → mini kart + "Hepsini Okudum"
 - [x] `yonetim/page.tsx` → virgüllü cüz girişi, `cuz_lar` array
+
+### 2026-09-14 — Hatırlatma Butonu (v1.52)
+
+- [x] **Toplu hatırlatma:** Okumayanlar başlığına `📋 Hatırlatma Metnini Kopyala` butonu eklendi
+  - Grup adı + tarih + okumayan liste (cüz no ile) + dua mesajı formatında panoya kopyalar
+  - 2 sn boyunca `✅ Kopyalandı!` geri bildirimi gösterir
+  - Commit: `07b994e`
 
 ### 2026-09-14 — Bugfix Serisi
 
