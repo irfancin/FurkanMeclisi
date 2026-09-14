@@ -43,6 +43,13 @@ function bugunTR() {
   })
 }
 
+function bugunKisa() {
+  return new Date().toLocaleDateString('tr-TR', {
+    timeZone: 'Europe/Istanbul',
+    day: 'numeric', month: 'long'
+  })
+}
+
 export default function RaporlarPage() {
   const [sekme, setSekme] = useState<Sekme>('gunluk')
   const [gruplar, setGruplar] = useState<Grup[]>([])
@@ -59,6 +66,7 @@ export default function RaporlarPage() {
   const [matris, setMatris] = useState<{ gunler: string[]; satirlar: MatrisSatir[] } | null>(null)
   const [matrisYukleniyor, setMatrisYukleniyor] = useState(false)
   const [ozetGoster, setOzetGoster] = useState(false)
+  const [kopyalandi, setKopyalandi] = useState(false)
   const topScrollRef = useRef<HTMLDivElement>(null)
   const tableScrollRef = useRef<HTMLDivElement>(null)
   const [tableScrollWidth, setTableScrollWidth] = useState(0)
@@ -116,6 +124,15 @@ export default function RaporlarPage() {
 
   const okumayan = rapor?.uyeler.filter(u => !u.okudu) ?? []
   const okuyan = rapor?.uyeler.filter(u => u.okudu) ?? []
+
+  const hatirlatmaKopyala = async () => {
+    const grupAdi = gruplar.find(g => g.id === seciliGrup)?.grup_adi ?? 'Furkan Meclisi'
+    const liste = okumayan.map(u => `• ${u.ad_soyad}${u.cuz_no ? ` (Cüz: ${u.cuz_no})` : ''}`).join('\n')
+    const metin = `📖 Furkan Meclisi — ${grupAdi}\nBugün (${bugunKisa()}) henüz okuma girişi yapmayanlar:\n${liste}\nLütfen okumalarınızı tamamlayıp giriş yapınız 🤲`
+    await navigator.clipboard.writeText(metin)
+    setKopyalandi(true)
+    setTimeout(() => setKopyalandi(false), 2000)
+  }
 
   return (
     <div className="py-2 space-y-3">
@@ -262,6 +279,12 @@ export default function RaporlarPage() {
               <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-red-400" />
                 <h2 className="font-semibold text-slate-700 text-sm">Henüz Okumayan ({okumayan.length} kişi)</h2>
+                {okumayan.length > 0 && (
+                  <button onClick={hatirlatmaKopyala}
+                    className="ml-auto flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-xs font-medium px-3 py-1 rounded-full transition-colors">
+                    {kopyalandi ? '✅ Kopyalandı!' : '📋 Hatırlatma Metnini Kopyala'}
+                  </button>
+                )}
               </div>
               {okumayan.length === 0 ? (
                 <div className="px-4 py-6 text-center">
