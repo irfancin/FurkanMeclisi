@@ -57,5 +57,7 @@ export interface OturumKullanici {
   ad_soyad: string
   tel_no: string
   grup_id: string
+  grup_adi: string
+  grup_tipi: GrupTipi | null
   kullanici_tipi: KullaniciTipi
 }

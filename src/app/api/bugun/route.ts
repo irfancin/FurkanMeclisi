@@ -17,7 +17,31 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient()
   const bugun = bugunTR()
 
-  // Aktif dönemi ara
+  // Grup tipini belirle
+  const { data: grup } = await supabase
+    .from('gruplar')
+    .select('grup_tipi, grup_adi')
+    .eq('id', grup_id)
+    .single()
+
+  // ── ZİKİR GRUBU ───────────────────────────────────────────────
+  if (grup?.grup_tipi === 'Zikir') {
+    const { data: kayit } = await supabase
+      .from('okuma_kayitlari')
+      .select('okunma_saati')
+      .eq('kullanici_id', kullanici_id)
+      .eq('tarih', bugun)
+      .eq('cuz_no', 0)
+      .maybeSingle()
+
+    return NextResponse.json({
+      grup_tipi: 'Zikir',
+      bugun_tamamlandi: !!kayit,
+      bugun_tamamlanma_saati: (kayit as { okunma_saati?: string } | null)?.okunma_saati ?? null,
+    })
+  }
+
+  // ── HATİM GRUBU ───────────────────────────────────────────────
   const { data: donem } = await supabase
     .from('donemler')
     .select('*')
@@ -26,7 +50,6 @@ export async function GET(req: NextRequest) {
     .gte('bitis_tarihi', bugun)
     .single()
 
-  // Tüm dönemleri getir (önceki tur için)
   const { data: tumDonemler } = await supabase
     .from('donemler')
     .select('id, tur_no, baslangic_tarihi, bitis_tarihi')
@@ -41,7 +64,6 @@ export async function GET(req: NextRequest) {
 
   const aktif = !!donem
 
-  // Sonraki tur başlangıcı (tur arası için)
   let sonraki_bas: string | null = null
   if (!aktif) {
     const d = new Date(hedefDonem.bitis_tarihi)
@@ -49,7 +71,6 @@ export async function GET(req: NextRequest) {
     sonraki_bas = d.toISOString().split('T')[0]
   }
 
-  // Cüz atamaları — birden fazla olabilir
   const { data: atamalar } = await supabase
     .from('donem_atamalari')
     .select('cuz_no')
@@ -59,7 +80,6 @@ export async function GET(req: NextRequest) {
 
   const cuz_listesi = (atamalar ?? []).map(a => a.cuz_no as number)
 
-  // Bu dönemdeki okuma kayıtları (cüz bazlı)
   const { data: donem_okumalar } = await supabase
     .from('okuma_kayitlari')
     .select('cuz_no, tarih, okunma_saati')
@@ -67,10 +87,8 @@ export async function GET(req: NextRequest) {
     .gte('tarih', hedefDonem.baslangic_tarihi)
     .lte('tarih', hedefDonem.bitis_tarihi)
 
-  // Bugün okuma kayıtları (sadece aktif dönemde anlamlı)
   const bugun_okumalar = aktif ? (donem_okumalar ?? []).filter(o => o.tarih === bugun) : []
 
-  // Her cüz için durum bilgisi
   const cuzler = cuz_listesi.map(cuz_no => {
     const okunan_gun = (donem_okumalar ?? []).filter(o => o.cuz_no === cuz_no).length
     const bugun_kaydi = bugun_okumalar.find(o => o.cuz_no === cuz_no) ?? null
@@ -82,10 +100,8 @@ export async function GET(req: NextRequest) {
     }
   })
 
-  // Önceki dönem bilgisi
   const oncekiDonemler = (tumDonemler ?? []).filter(d => d.id !== hedefDonem.id)
   const oncekiDonem = oncekiDonemler[0] ?? null
-
   let onceki_cuzler: { cuz_no: number; okunan_gun: number }[] = []
 
   if (oncekiDonem) {
@@ -110,6 +126,7 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
+    grup_tipi: 'Hatim',
     donem: hedefDonem,
     aktif,
     sonraki_bas,
