@@ -205,29 +205,44 @@ export default function BugunPage() {
           // ── ZİKİR GRUBU ───────────────────────────────────────
           veri.grup_tipi === 'Zikir' ? (
             <div className="space-y-4">
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 text-center">
-                <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Zikir Grubu</p>
-                <p className="text-lg font-semibold text-slate-700">{kullanici?.grup_adi}</p>
-                <p className="text-xs text-slate-400 mt-1">{tarihTR(new Date().toISOString())}</p>
-              </div>
-
-              {veri.bugun_tamamlandi ? (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center">
-                  <div className="text-3xl mb-2">🤲</div>
-                  <p className="font-semibold text-emerald-700">Bugün tamamlandı</p>
-                  {veri.bugun_tamamlanma_saati && (
-                    <p className="text-emerald-500 text-sm mt-1">Saat: {saatFormatla(veri.bugun_tamamlanma_saati)}</p>
+              {!veri.aktif ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center">
+                  <p className="text-3xl mb-2">⏸</p>
+                  <p className="font-semibold text-amber-800">{veri.donem?.tur_no}. Tur Tamamlandı</p>
+                  <p className="text-sm text-amber-600 mt-1">Ara dönem — dinlenme zamanı!</p>
+                  {veri.sonraki_bas && (
+                    <p className="text-xs text-amber-500 mt-2 font-medium">
+                      Yeni tur: {tarihTR(veri.sonraki_bas)}
+                    </p>
                   )}
-                  <button onClick={zikirGeriAl} disabled={islemYapiliyor !== null}
-                    className="mt-4 text-xs text-slate-400 hover:text-slate-600 underline disabled:opacity-50">
-                    Geri al
-                  </button>
                 </div>
               ) : (
-                <button onClick={zikirTamamla} disabled={islemYapiliyor !== null}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold py-5 rounded-2xl text-lg shadow-sm transition-colors">
-                  {islemYapiliyor === 0 ? 'Kaydediliyor...' : '🤲 Zikirleri Tamamladım'}
-                </button>
+                <>
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 text-center">
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Zikir Grubu</p>
+                    <p className="text-lg font-semibold text-slate-700">{kullanici?.grup_adi}</p>
+                    <p className="text-xs text-slate-400 mt-1">{tarihTR(new Date().toISOString())}</p>
+                  </div>
+
+                  {veri.bugun_tamamlandi ? (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center">
+                      <div className="text-3xl mb-2">🤲</div>
+                      <p className="font-semibold text-emerald-700">Bugün tamamlandı</p>
+                      {veri.bugun_tamamlanma_saati && (
+                        <p className="text-emerald-500 text-sm mt-1">Saat: {saatFormatla(veri.bugun_tamamlanma_saati)}</p>
+                      )}
+                      <button onClick={zikirGeriAl} disabled={islemYapiliyor !== null}
+                        className="mt-4 text-xs text-slate-400 hover:text-slate-600 underline disabled:opacity-50">
+                        Geri al
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={zikirTamamla} disabled={islemYapiliyor !== null}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold py-5 rounded-2xl text-lg shadow-sm transition-colors">
+                      {islemYapiliyor === 0 ? 'Kaydediliyor...' : '🤲 Zikirleri Tamamladım'}
+                    </button>
+                  )}
+                </>
               )}
             </div>
 

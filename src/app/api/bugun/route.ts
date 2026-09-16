@@ -26,6 +26,39 @@ export async function GET(req: NextRequest) {
 
   // ── ZİKİR GRUBU ───────────────────────────────────────────────
   if (grup?.grup_tipi === 'Zikir') {
+    const { data: zikirDonem } = await supabase
+      .from('donemler')
+      .select('*')
+      .eq('grup_id', grup_id)
+      .lte('baslangic_tarihi', bugun)
+      .gte('bitis_tarihi', bugun)
+      .single()
+
+    const { data: zikirTumDonemler } = await supabase
+      .from('donemler')
+      .select('id, tur_no, baslangic_tarihi, bitis_tarihi')
+      .eq('grup_id', grup_id)
+      .order('tur_no', { ascending: false })
+      .limit(1)
+
+    const zikirHedef = zikirDonem ?? (zikirTumDonemler?.[0] ?? null)
+    const zikirAktif = !!zikirDonem
+
+    if (!zikirHedef) {
+      return NextResponse.json({ hata: 'Grubunuz için dönem bulunamadı.' }, { status: 404 })
+    }
+
+    if (!zikirAktif) {
+      const d = new Date(zikirHedef.bitis_tarihi)
+      d.setDate(d.getDate() + 15)
+      return NextResponse.json({
+        grup_tipi: 'Zikir',
+        aktif: false,
+        donem: zikirHedef,
+        sonraki_bas: d.toISOString().split('T')[0],
+      })
+    }
+
     const { data: kayit } = await supabase
       .from('okuma_kayitlari')
       .select('okunma_saati')
@@ -36,6 +69,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       grup_tipi: 'Zikir',
+      aktif: true,
+      donem: zikirHedef,
       bugun_tamamlandi: !!kayit,
       bugun_tamamlanma_saati: (kayit as { okunma_saati?: string } | null)?.okunma_saati ?? null,
     })
