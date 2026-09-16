@@ -9,7 +9,7 @@ Kur'an hatim grubunu yönetmek için geliştirilmiş mobil-öncelikli web uygula
 - **Deploy:** Vercel (otomatik CI/CD — main branch → production)
 - **Repo:** /home/irfan/FurkanMeclisi
 - **Başlatma (local):** `npm run dev` (port 3000)
-- **Güncel versiyon:** v1.52 (`VERSIYON` sabiti `src/app/page.tsx`'te)
+- **Güncel versiyon:** v1.54 (`VERSIYON` sabiti `src/app/page.tsx`'te)
 - **Yapılacaklar:** `yapilacaklar.md` — açık görevler burada takip edilir
 
 ---
@@ -82,28 +82,29 @@ FurkanMeclisi/
 
 ### Önemli DB Kuralları
 - **tel_no:** Başında `0` olmadan saklanır (migration 005 ile normalize edildi) — `0532...` → `532...`
-- **pin:** NULL = henüz kalıcı PIN belirlenmemiş (ilk giriş geçici PIN ile yapılıyor)
+- **tel_no unique:** Migration 008 ile grup bazlı unique — `UNIQUE(tel_no, grup_id) WHERE grup_id IS NOT NULL`; aynı kişi farklı gruplarda aynı tel_no ile kayıtlı olabilir
+- **pin:** Artık giriş akışında kullanılmıyor (v1.53 — PIN sistemi kaldırıldı); kolon DB'de duruyor
 - **grup_id:** Yönetici ve Sistem Bakım kullanıcılarında NULL olabilir
 - **En son dönem sorgusu:** `ORDER BY tur_no DESC LIMIT 1` — aktiflik filtresi yok, her zaman en son tur alınır
 - **Tarih formatı:** `sv-SE` locale ile `YYYY-MM-DD` — Türkiye saati: `{ timeZone: 'Europe/Istanbul' }`
+- **Zikir okuma kaydı:** `cuz_no = 0` ile `okuma_kayitlari`'na eklenir — "Zikirleri Tamamladım" butonu bu kaydı oluşturur/siler
+- **OturumKullanici:** `grup_adi` ve `grup_tipi` alanları eklendi (v1.53); `fm_tum_gruplar` localStorage anahtarı çoklu grup listesini tutar
 
 ---
 
-## Giriş Sistemi
+## Giriş Sistemi (v1.53+)
 
-### Üye Girişi (4 adım)
-1. Grup + isim seçimi (dropdown)
-2. PIN kodu girişi
-3. İlk girişte: geçici PIN = `(tur_no)` + `(cüz_no, 2 hane)` — örn. 46. tur, 2. cüz → `4602`
-4. Kalıcı PIN belirleme (ilk girişte zorunlu)
-
-### Yönetici Girişi
-- Telefon numarası ile (PIN yok)
-- `kullanici_tipi = 'Yonetici'` olan kayıt
+### Üye ve Yönetici Girişi — tek akış
+1. Telefon numarası girişi (tek ekran)
+2. API tüm aktif kayıtları tel_no ile bulur, grup bilgisi (grup_adi, grup_tipi) ile döner
+3. **Tek grup:** Direkt giriş → localStorage → yönlendirme
+4. **Çoklu grup:** Grup seçim ekranı (Hatim varsayılan seçili) → seçim → yönlendirme
 
 ### Oturum
-- `localStorage.fm_oturum` — `OturumKullanici` objesi (`id, ad_soyad, tel_no, grup_id, kullanici_tipi`)
-- Üye → `/bugun`, Yönetici → `/admin`
+- `localStorage.fm_oturum` — aktif `OturumKullanici` (`id, ad_soyad, tel_no, grup_id, grup_adi, grup_tipi, kullanici_tipi`)
+- `localStorage.fm_tum_gruplar` — çoklu grupta tüm kayıtlar (toggle için); tek grupta bu key yoktur
+- Üye → `/bugun` (toggle ile grup değiştirilebilir), Yönetici → `/admin`
+- Çıkış: her iki localStorage anahtarı da temizlenir
 
 ---
 

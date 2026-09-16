@@ -28,6 +28,16 @@
 - [x] **aktif=false sorunu:** `ON CONFLICT DO NOTHING` gerçek kullanıcı kaydını atlamıştı; tel numaraları `999000000X` formatına güncellendi
 - [x] Commit: `3ba5744`
 
+### 2026-09-17 — Zikir Grubu + Tel No Güncellemeleri (v1.53–1.54)
+
+- [x] **DB: tel_no unique constraint** global → grup bazlı (migration 008): aynı kişi Hatim+Zikir gruplarında ayrı kayıtla bulunabilir
+- [x] **DB: Zikir üyeleri tel_no güncellendi** — test numaraları Hatim grubundaki gerçek numaralarla eşleştirildi (ad_soyad bazlı JOIN)
+- [x] **DB: Ayşegül Hallaç çift kayıt çözüldü** — Hatim-3'te 10 ve 13. cüz ayrı kayıtlardaydı; 13. cüz doğru kayda taşındı, yanlış kayıt pasif yapıldı
+- [x] **Giriş sistemi yenilendi (v1.53):** PIN sistemi kaldırıldı → tek ekran tel_no girişi; çoklu grupta üye için Hatim varsayılan grup seçim ekranı
+- [x] **Bugun sayfası: grup toggle** — Hatim+Zikir üyeleri /bugun'da üstteki toggle ile grup değiştirebilir; son seçilen localStorage'da hatırlanır
+- [x] **Zikir ekranı:** Aktif dönemde "🤲 Zikirleri Tamamladım" butonu (cuz_no=0); ara dönemde "Tur Tamamlandı" mesajı (v1.54)
+- [x] **DB: Zikir 4. Tur dönemi** tur_no 6→4 güncellendi (26 Eylül–25 Ekim 2026, 30 gün)
+
 ### 2026-09-14 — Hatırlatma Butonu (v1.52)
 
 - [x] **Toplu hatırlatma:** Okumayanlar başlığına `📋 Hatırlatma Metnini Kopyala` butonu eklendi
