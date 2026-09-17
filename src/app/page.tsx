@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { OturumKullanici } from '@/types'
 
-const VERSIYON = 'v1.56'
+const VERSIYON = 'v1.57'
 
 type Adim = 'tel' | 'grup-sec'
 
@@ -29,27 +29,46 @@ export default function GirisPage() {
     e.preventDefault()
     setHata(''); setYukleniyor(true)
 
-    const res = await fetch('/api/giris', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tel_no: telNo }),
-    })
-    const d = await res.json()
+    try {
+      const res = await fetch('/api/giris', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tel_no: telNo }),
+      })
 
-    if (!res.ok) { setYukleniyor(false); setHata(d.hata); return }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let d: any
+      try {
+        d = await res.json()
+      } catch {
+        setYukleniyor(false)
+        setHata(`Sunucu yanıtı okunamadı (HTTP ${res.status}). Tekrar deneyin.`)
+        return
+      }
 
-    const kullanicilar: OturumKullanici[] = d.kullanicilar
+      if (!res.ok) {
+        setYukleniyor(false)
+        setHata(d?.hata ?? `Sunucu hatası (${res.status}).`)
+        return
+      }
 
-    if (kullanicilar.length === 1) {
-      oturumKaydet(kullanicilar, kullanicilar[0])
-      // yukleniyor true kalıyor — yönlendirme gerçekleşene kadar buton "Kontrol ediliyor..." gösterir
-    } else {
-      // Birden fazla grup — Hatim varsayılan
+      const kullanicilar: OturumKullanici[] = Array.isArray(d?.kullanicilar) ? d.kullanicilar : []
+
+      if (kullanicilar.length === 1) {
+        oturumKaydet(kullanicilar, kullanicilar[0])
+      } else if (kullanicilar.length > 1) {
+        setYukleniyor(false)
+        const hatim = kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
+        setBulunanlar(kullanicilar)
+        setSeciliGrupId(hatim.grup_id)
+        setAdim('grup-sec')
+      } else {
+        setYukleniyor(false)
+        setHata('Kullanıcı bulunamadı. Tekrar deneyin.')
+      }
+    } catch {
       setYukleniyor(false)
-      const hatim = kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
-      setBulunanlar(kullanicilar)
-      setSeciliGrupId(hatim.grup_id)
-      setAdim('grup-sec')
+      setHata('Bağlantı hatası. İnternet bağlantınızı kontrol edin.')
     }
   }
 
