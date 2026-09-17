@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { OturumKullanici } from '@/types'
 
-const VERSIYON = 'v1.62'
+const VERSIYON = 'v1.63'
 
 type Adim = 'tel' | 'grup-sec'
 
@@ -55,13 +55,19 @@ export default function GirisPage() {
       if (kullanicilar.length === 1) {
         oturumKaydet(kullanicilar, kullanicilar[0])
       } else if (kullanicilar.length > 1) {
-        setYukleniyor(false)
         const sonGrupId = localStorage.getItem('fm_son_grup_id')
         const sonGrup = sonGrupId ? kullanicilar.find(k => k.grup_id === sonGrupId) : null
-        const varsayilan = sonGrup ?? kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
-        setBulunanlar(kullanicilar)
-        setSeciliGrupId(varsayilan.grup_id)
-        setAdim('grup-sec')
+        if (sonGrup) {
+          // Son grup biliniyor — seçim ekranını atla, direkt giriş yap
+          oturumKaydet(kullanicilar, sonGrup)
+        } else {
+          // İlk giriş veya kayıt yok — seçim ekranı göster
+          setYukleniyor(false)
+          const hatim = kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
+          setBulunanlar(kullanicilar)
+          setSeciliGrupId(hatim.grup_id)
+          setAdim('grup-sec')
+        }
       } else {
         setYukleniyor(false)
         setHata('Kullanıcı bulunamadı. Tekrar deneyin.')
