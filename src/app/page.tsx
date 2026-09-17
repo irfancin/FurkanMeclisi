@@ -1,80 +1,133 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { OturumKullanici } from '@/types'
 
-const VERSIYON = 'v1.63'
+const VERSIYON = 'v1.64'
 
-type Adim = 'tel' | 'grup-sec'
+type Adim = 'tel' | 'grup-sec' | 'otomatik'
 
 export default function GirisPage() {
   const router = useRouter()
-  const [adim, setAdim] = useState<Adim>('tel')
+  const [adim, setAdim] = useState<Adim>('otomatik')
   const [telNo, setTelNo] = useState('')
   const [bulunanlar, setBulunanlar] = useState<OturumKullanici[]>([])
   const [seciliGrupId, setSeciliGrupId] = useState('')
   const [hata, setHata] = useState('')
   const [yukleniyor, setYukleniyor] = useState(false)
 
+  const oturumKaydet = useCallback((tumKullanicilar: OturumKullanici[], aktif: OturumKullanici) => {
+    localStorage.setItem('fm_oturum', JSON.stringify(aktif))
+    localStorage.setItem('fm_hatirla_tel', aktif.tel_no)
+    if (tumKullanicilar.length > 1) {
+      localStorage.setItem('fm_tum_gruplar', JSON.stringify(tumKullanicilar))
+    } else {
+      localStorage.removeItem('fm_tum_gruplar')
+    }
+    window.location.href = aktif.kullanici_tipi === 'Uye' ? '/bugun' : '/admin'
+  }, [])
+
+  // null = ağ/sunucu hatası (fm_hatirla_tel silinmez), [] = numara bulunamadı
+  const girisYap = useCallback(async (tel: string): Promise<OturumKullanici[] | null> => {
+    setYukleniyor(true)
+    try {
+      const res = await fetch('/api/giris', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tel_no: tel }),
+      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let d: any
+      try { d = await res.json() } catch { return null }
+      if (res.status === 401) return []   // numara bulunamadı
+      if (!res.ok) return null            // başka sunucu hatası
+      return Array.isArray(d?.kullanicilar) ? d.kullanicilar as OturumKullanici[] : []
+    } catch {
+      return null  // ağ hatası
+    }
+  }, [])
+
+  // Sayfa açılışı: aktif oturum → yönlendir, hatırlanan tel → otomatik giriş, aksi → form göster
   useEffect(() => {
     const oturum = localStorage.getItem('fm_oturum')
     if (oturum) {
       const u: OturumKullanici = JSON.parse(oturum)
       router.replace(u.kullanici_tipi === 'Uye' ? '/bugun' : '/admin')
+      return
     }
-  }, [router])
+
+    const hatirla = localStorage.getItem('fm_hatirla_tel')
+    if (!hatirla) {
+      setAdim('tel')
+      return
+    }
+
+    // Hatırlanan numara var — otomatik giriş dene
+    girisYap(hatirla).then(kullanicilar => {
+      if (kullanicilar === null) {
+        // Ağ/sunucu hatası — numarayı silme, formu göster
+        setYukleniyor(false)
+        setAdim('tel')
+        return
+      }
+      if (kullanicilar.length === 0) {
+        // Numara artık kayıtlı değil — hatırlanan numarayı sil
+        localStorage.removeItem('fm_hatirla_tel')
+        setYukleniyor(false)
+        setAdim('tel')
+        return
+      }
+      if (kullanicilar.length === 1) {
+        oturumKaydet(kullanicilar, kullanicilar[0])
+        return
+      }
+      // Çoklu grup
+      const sonGrupId = localStorage.getItem('fm_son_grup_id')
+      const sonGrup = sonGrupId ? kullanicilar.find(k => k.grup_id === sonGrupId) : null
+      if (sonGrup) {
+        oturumKaydet(kullanicilar, sonGrup)
+      } else {
+        setYukleniyor(false)
+        const hatim = kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
+        setBulunanlar(kullanicilar)
+        setSeciliGrupId(hatim.grup_id)
+        setAdim('grup-sec')
+      }
+    })
+  }, [router, girisYap, oturumKaydet])
 
   const telGiris = async (e: React.FormEvent) => {
     e.preventDefault()
     setHata(''); setYukleniyor(true)
 
-    try {
-      const res = await fetch('/api/giris', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tel_no: telNo }),
-      })
+    const kullanicilar = await girisYap(telNo)
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let d: any
-      try { d = await res.json() } catch {
-        setYukleniyor(false)
-        setHata(`Sunucu yanıtı okunamadı (HTTP ${res.status}).`)
-        return
-      }
-
-      if (!res.ok) {
-        setYukleniyor(false)
-        setHata(d?.hata ?? `Sunucu hatası (${res.status}).`)
-        return
-      }
-
-      const kullanicilar: OturumKullanici[] = Array.isArray(d?.kullanicilar) ? d.kullanicilar : []
-
-      if (kullanicilar.length === 1) {
-        oturumKaydet(kullanicilar, kullanicilar[0])
-      } else if (kullanicilar.length > 1) {
-        const sonGrupId = localStorage.getItem('fm_son_grup_id')
-        const sonGrup = sonGrupId ? kullanicilar.find(k => k.grup_id === sonGrupId) : null
-        if (sonGrup) {
-          // Son grup biliniyor — seçim ekranını atla, direkt giriş yap
-          oturumKaydet(kullanicilar, sonGrup)
-        } else {
-          // İlk giriş veya kayıt yok — seçim ekranı göster
-          setYukleniyor(false)
-          const hatim = kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
-          setBulunanlar(kullanicilar)
-          setSeciliGrupId(hatim.grup_id)
-          setAdim('grup-sec')
-        }
-      } else {
-        setYukleniyor(false)
-        setHata('Kullanıcı bulunamadı. Tekrar deneyin.')
-      }
-    } catch {
+    if (!kullanicilar) {
       setYukleniyor(false)
-      setHata('Bağlantı hatası. İnternet bağlantınızı kontrol edin.')
+      setHata('Bağlantı hatası veya sunucu hatası. Tekrar deneyin.')
+      return
+    }
+    if (kullanicilar.length === 0) {
+      setYukleniyor(false)
+      setHata('Numaranız kayıtlı değil.')
+      return
+    }
+    if (kullanicilar.length === 1) {
+      oturumKaydet(kullanicilar, kullanicilar[0])
+      return
+    }
+    // Çoklu grup
+    const sonGrupId = localStorage.getItem('fm_son_grup_id')
+    const sonGrup = sonGrupId ? kullanicilar.find(k => k.grup_id === sonGrupId) : null
+    if (sonGrup) {
+      oturumKaydet(kullanicilar, sonGrup)
+    } else {
+      setYukleniyor(false)
+      const hatim = kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
+      setBulunanlar(kullanicilar)
+      setSeciliGrupId(hatim.grup_id)
+      setAdim('grup-sec')
     }
   }
 
@@ -82,16 +135,6 @@ export default function GirisPage() {
     const secili = bulunanlar.find(k => k.grup_id === seciliGrupId)
     if (!secili) return
     oturumKaydet(bulunanlar, secili)
-  }
-
-  const oturumKaydet = (tumKullanicilar: OturumKullanici[], aktif: OturumKullanici) => {
-    localStorage.setItem('fm_oturum', JSON.stringify(aktif))
-    if (tumKullanicilar.length > 1) {
-      localStorage.setItem('fm_tum_gruplar', JSON.stringify(tumKullanicilar))
-    } else {
-      localStorage.removeItem('fm_tum_gruplar')
-    }
-    window.location.href = aktif.kullanici_tipi === 'Uye' ? '/bugun' : '/admin'
   }
 
   return (
@@ -106,6 +149,13 @@ export default function GirisPage() {
           <h1 className="text-2xl font-bold text-slate-800">Furkan Meclisi</h1>
           <p className="text-slate-400 text-sm">Hatim Kardeşliği</p>
         </div>
+
+        {/* Otomatik giriş bekleniyor */}
+        {adim === 'otomatik' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-center">
+            <p className="text-slate-400 text-sm">Giriş yapılıyor...</p>
+          </div>
+        )}
 
         {/* ADIM 1 — Telefon numarası */}
         {adim === 'tel' && (
@@ -136,7 +186,7 @@ export default function GirisPage() {
           </div>
         )}
 
-        {/* ADIM 2 — Grup seçimi (çoklu grup) */}
+        {/* ADIM 2 — Grup seçimi (çoklu grup, ilk giriş) */}
         {adim === 'grup-sec' && (
           <div className="bg-white rounded-2xl shadow-sm border-2 border-emerald-400 p-6 space-y-4">
             <div className="text-center space-y-1">
