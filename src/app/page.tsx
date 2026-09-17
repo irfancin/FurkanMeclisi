@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { OturumKullanici } from '@/types'
 
-const VERSIYON = 'v1.55'
+const VERSIYON = 'v1.56'
 
 type Adim = 'tel' | 'grup-sec'
 
@@ -66,7 +66,7 @@ export default function GirisPage() {
     } else {
       localStorage.removeItem('fm_tum_gruplar')
     }
-    router.replace(aktif.kullanici_tipi === 'Uye' ? '/bugun' : '/admin')
+    window.location.href = aktif.kullanici_tipi === 'Uye' ? '/bugun' : '/admin'
   }
 
   return (
