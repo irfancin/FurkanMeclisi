@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { OturumKullanici } from '@/types'
 
-const VERSIYON = 'v1.61'
+const VERSIYON = 'v1.62'
 
 type Adim = 'tel' | 'grup-sec'
 
@@ -56,9 +56,11 @@ export default function GirisPage() {
         oturumKaydet(kullanicilar, kullanicilar[0])
       } else if (kullanicilar.length > 1) {
         setYukleniyor(false)
-        const hatim = kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
+        const sonGrupId = localStorage.getItem('fm_son_grup_id')
+        const sonGrup = sonGrupId ? kullanicilar.find(k => k.grup_id === sonGrupId) : null
+        const varsayilan = sonGrup ?? kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
         setBulunanlar(kullanicilar)
-        setSeciliGrupId(hatim.grup_id)
+        setSeciliGrupId(varsayilan.grup_id)
         setAdim('grup-sec')
       } else {
         setYukleniyor(false)

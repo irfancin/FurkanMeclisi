@@ -74,6 +74,7 @@ export default function BugunPage() {
 
   const grupDegistir = (yeni: OturumKullanici) => {
     localStorage.setItem('fm_oturum', JSON.stringify(yeni))
+    localStorage.setItem('fm_son_grup_id', yeni.grup_id)
     setKullanici(yeni)
     setVeri(null)
     veriYukle(yeni)
@@ -143,6 +144,7 @@ export default function BugunPage() {
   }
 
   const cikis = () => {
+    if (kullanici?.grup_id) localStorage.setItem('fm_son_grup_id', kullanici.grup_id)
     localStorage.removeItem('fm_oturum')
     localStorage.removeItem('fm_tum_gruplar')
     router.push('/')
