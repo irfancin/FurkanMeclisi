@@ -35,16 +35,17 @@ export default function GirisPage() {
       body: JSON.stringify({ tel_no: telNo }),
     })
     const d = await res.json()
-    setYukleniyor(false)
 
-    if (!res.ok) { setHata(d.hata); return }
+    if (!res.ok) { setYukleniyor(false); setHata(d.hata); return }
 
     const kullanicilar: OturumKullanici[] = d.kullanicilar
 
     if (kullanicilar.length === 1) {
       oturumKaydet(kullanicilar, kullanicilar[0])
+      // yukleniyor true kalıyor — yönlendirme gerçekleşene kadar buton "Kontrol ediliyor..." gösterir
     } else {
       // Birden fazla grup — Hatim varsayılan
+      setYukleniyor(false)
       const hatim = kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
       setBulunanlar(kullanicilar)
       setSeciliGrupId(hatim.grup_id)
