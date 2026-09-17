@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { OturumKullanici } from '@/types'
 
-const VERSIYON = 'v1.58'
+const VERSIYON = 'v1.59'
 
-type Adim = 'tel' | 'grup-sec'
+type Adim = 'tel' | 'grup-sec' | 'basarili'
 
 export default function GirisPage() {
   const router = useRouter()
@@ -16,53 +16,65 @@ export default function GirisPage() {
   const [seciliGrupId, setSeciliGrupId] = useState('')
   const [hata, setHata] = useState('')
   const [yukleniyor, setYukleniyor] = useState(false)
-  const [navTarget, setNavTarget] = useState<string | null>(null)
+  const [basariliHedef, setBasariliHedef] = useState('/bugun')
+  const logRef = useRef<string[]>([])
+  const [logGoster, setLogGoster] = useState(false)
 
-  // Mevcut oturum varsa yönlendir (sayfa açılışı + login sonrası)
+  const log = (msg: string) => {
+    const line = `${new Date().toLocaleTimeString('tr')} ${msg}`
+    logRef.current = [...logRef.current, line]
+  }
+
+  // Sayfa açılışında mevcut oturum kontrolü
   useEffect(() => {
-    if (navTarget) {
-      router.replace(navTarget)
-      return
-    }
     const oturum = localStorage.getItem('fm_oturum')
     if (oturum) {
       const u: OturumKullanici = JSON.parse(oturum)
       router.replace(u.kullanici_tipi === 'Uye' ? '/bugun' : '/admin')
     }
-  }, [navTarget, router])
+  }, [router])
 
   const telGiris = async (e: React.FormEvent) => {
     e.preventDefault()
+    logRef.current = []
+    log(`Giriş: "${telNo}" (${telNo.length} karakter)`)
     setHata(''); setYukleniyor(true)
 
     try {
+      log('API çağrılıyor...')
       const res = await fetch('/api/giris', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tel_no: telNo }),
       })
+      log(`API yanıtı: HTTP ${res.status}`)
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let d: any
       try {
         d = await res.json()
+        log(`JSON OK`)
       } catch {
         setYukleniyor(false)
-        setHata(`Sunucu yanıtı okunamadı (HTTP ${res.status}). Tekrar deneyin.`)
+        setLogGoster(true)
+        setHata(`Sunucu yanıtı okunamadı (HTTP ${res.status}).`)
         return
       }
 
       if (!res.ok) {
         setYukleniyor(false)
+        setLogGoster(true)
         setHata(d?.hata ?? `Sunucu hatası (${res.status}).`)
         return
       }
 
       const kullanicilar: OturumKullanici[] = Array.isArray(d?.kullanicilar) ? d.kullanicilar : []
+      log(`Kullanıcı sayısı: ${kullanicilar.length}`)
 
       if (kullanicilar.length === 1) {
         oturumKaydet(kullanicilar, kullanicilar[0])
       } else if (kullanicilar.length > 1) {
+        log('Grup seçim ekranı açılıyor')
         setYukleniyor(false)
         const hatim = kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
         setBulunanlar(kullanicilar)
@@ -70,10 +82,13 @@ export default function GirisPage() {
         setAdim('grup-sec')
       } else {
         setYukleniyor(false)
-        setHata('Kullanıcı bulunamadı. Tekrar deneyin.')
+        setLogGoster(true)
+        setHata('Kullanıcı bulunamadı.')
       }
-    } catch {
+    } catch (err) {
+      log(`Hata: ${err}`)
       setYukleniyor(false)
+      setLogGoster(true)
       setHata('Bağlantı hatası. İnternet bağlantınızı kontrol edin.')
     }
   }
@@ -86,17 +101,31 @@ export default function GirisPage() {
 
   const oturumKaydet = (tumKullanicilar: OturumKullanici[], aktif: OturumKullanici) => {
     try {
+      log('localStorage kaydediliyor...')
       localStorage.setItem('fm_oturum', JSON.stringify(aktif))
       const kontrol = localStorage.getItem('fm_oturum')
-      if (!kontrol) throw new Error('localStorage boş döndü')
+      if (!kontrol) {
+        log('localStorage BAŞARISIZ: getItem null döndü')
+        throw new Error('localStorage boş döndü')
+      }
+      log('localStorage OK')
+
       if (tumKullanicilar.length > 1) {
         localStorage.setItem('fm_tum_gruplar', JSON.stringify(tumKullanicilar))
       } else {
         localStorage.removeItem('fm_tum_gruplar')
       }
-      setNavTarget(aktif.kullanici_tipi === 'Uye' ? '/bugun' : '/admin')
+
+      const hedef = aktif.kullanici_tipi === 'Uye' ? '/bugun' : '/admin'
+      log(`Hedef: ${hedef}`)
+      setBasariliHedef(hedef)
+      setYukleniyor(false)
+      setAdim('basarili')
+      log('Yönlendirme deneniyor (window.location.href)...')
+      window.location.href = hedef
     } catch {
       setYukleniyor(false)
+      setLogGoster(true)
       setHata('Tarayıcı hafızasına yazılamadı. Lütfen özel/gizli sekmeyi kapatıp tekrar deneyin.')
     }
   }
@@ -131,15 +160,28 @@ export default function GirisPage() {
                   className="w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
-              {hata && <p className="text-sm text-red-500 text-center">{hata}</p>}
-              <button type="submit" disabled={yukleniyor || telNo.length < 10}
+              {hata && (
+                <p className="text-sm text-red-500 text-center">{hata}</p>
+              )}
+              <button type="submit" disabled={yukleniyor || telNo.length < 6}
                 className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-semibold py-3 rounded-xl transition-colors">
                 {yukleniyor ? 'Kontrol ediliyor...' : 'Giriş Yap'}
               </button>
             </form>
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between">
+              <button onClick={() => setLogGoster(v => !v)}
+                className="text-xs text-slate-300 hover:text-slate-400">
+                {logGoster ? 'Gizle' : 'Tanı'}
+              </button>
               <span className="text-xs text-slate-400 select-none">{VERSIYON}</span>
             </div>
+            {logGoster && logRef.current.length > 0 && (
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-0.5">
+                {logRef.current.map((l, i) => (
+                  <p key={i} className="text-xs font-mono text-slate-500">{l}</p>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -179,6 +221,31 @@ export default function GirisPage() {
               className="w-full text-sm text-slate-400 hover:text-slate-600 py-1">
               ← Geri
             </button>
+          </div>
+        )}
+
+        {/* ADIM 3 — Giriş başarılı (fallback: oto-yönlendirme çalışmazsa) */}
+        {adim === 'basarili' && (
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-emerald-400 p-6 space-y-4 text-center">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-100 rounded-full">
+              <span className="text-3xl">✅</span>
+            </div>
+            <div>
+              <p className="font-bold text-emerald-700 text-lg">Giriş Başarılı!</p>
+              <p className="text-sm text-slate-500 mt-1">Yönlendirme otomatik gerçekleşmezse aşağıya tıklayın.</p>
+            </div>
+            <a
+              href={basariliHedef}
+              className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition-colors">
+              Ana Sayfaya Git →
+            </a>
+            {logGoster && logRef.current.length > 0 && (
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-0.5 text-left">
+                {logRef.current.map((l, i) => (
+                  <p key={i} className="text-xs font-mono text-slate-500">{l}</p>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
