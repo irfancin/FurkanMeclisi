@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { OturumKullanici } from '@/types'
 
-const VERSIYON = 'v1.59'
+const VERSIYON = 'v1.60'
 
 type Adim = 'tel' | 'grup-sec' | 'basarili'
 
@@ -156,14 +156,14 @@ export default function GirisPage() {
                   onChange={e => setTelNo(e.target.value)}
                   placeholder="05XX XXX XX XX"
                   required
-                  autoComplete="off"
+                  autoComplete="tel"
                   className="w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
               {hata && (
                 <p className="text-sm text-red-500 text-center">{hata}</p>
               )}
-              <button type="submit" disabled={yukleniyor || telNo.length < 6}
+              <button type="submit" disabled={yukleniyor || telNo.length < 10}
                 className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-semibold py-3 rounded-xl transition-colors">
                 {yukleniyor ? 'Kontrol ediliyor...' : 'Giriş Yap'}
               </button>
