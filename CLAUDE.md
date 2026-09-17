@@ -9,7 +9,7 @@ Kur'an hatim grubunu yönetmek için geliştirilmiş mobil-öncelikli web uygula
 - **Deploy:** Vercel (otomatik CI/CD — main branch → production)
 - **Repo:** /home/irfan/FurkanMeclisi
 - **Başlatma (local):** `npm run dev` (port 3000)
-- **Güncel versiyon:** v1.62 (`VERSIYON` sabiti `src/app/page.tsx`'te)
+- **Güncel versiyon:** v1.63 (`VERSIYON` sabiti `src/app/page.tsx`'te)
 - **Yapılacaklar:** `yapilacaklar.md` — açık görevler burada takip edilir
 
 ---
@@ -103,7 +103,7 @@ FurkanMeclisi/
 ### Oturum
 - `localStorage.fm_oturum` — aktif `OturumKullanici` (`id, ad_soyad, tel_no, grup_id, grup_adi, grup_tipi, kullanici_tipi`)
 - `localStorage.fm_tum_gruplar` — çoklu grupta tüm kayıtlar (toggle için); tek grupta bu key yoktur
-- `localStorage.fm_son_grup_id` — son seçilen grup ID'si; çıkışta ve `grupDegistir()`'da güncellenir, çıkışta silinmez; sonraki giriş grup seçim ekranında varsayılan seçim için kullanılır
+- `localStorage.fm_son_grup_id` — son seçilen grup ID'si; çıkışta ve `grupDegistir()`'da güncellenir, çıkışta silinmez; sonraki çoklu grup girişinde bu grup biliniyorsa seçim ekranı ATLANIR ve direkt giriş yapılır; bilinmiyorsa seçim ekranı Hatim varsayılanla açılır
 - Üye → `/bugun` (toggle ile grup değiştirilebilir), Yönetici → `/admin`
 - Çıkış: her iki localStorage anahtarı da temizlenir
 
