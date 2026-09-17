@@ -27,6 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const cikis = () => {
     localStorage.removeItem('fm_oturum')
+    localStorage.removeItem('fm_hatirla_tel')
     router.push('/')
   }
 

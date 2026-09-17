@@ -147,6 +147,7 @@ export default function BugunPage() {
     if (kullanici?.grup_id) localStorage.setItem('fm_son_grup_id', kullanici.grup_id)
     localStorage.removeItem('fm_oturum')
     localStorage.removeItem('fm_tum_gruplar')
+    localStorage.removeItem('fm_hatirla_tel')  // Çıkış = kasıtlı; bir sonraki açılışta tel formu göster
     router.push('/')
   }
 
