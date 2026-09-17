@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { OturumKullanici } from '@/types'
 
-const VERSIYON = 'v1.57'
+const VERSIYON = 'v1.58'
 
 type Adim = 'tel' | 'grup-sec'
 
@@ -16,14 +16,20 @@ export default function GirisPage() {
   const [seciliGrupId, setSeciliGrupId] = useState('')
   const [hata, setHata] = useState('')
   const [yukleniyor, setYukleniyor] = useState(false)
+  const [navTarget, setNavTarget] = useState<string | null>(null)
 
+  // Mevcut oturum varsa yönlendir (sayfa açılışı + login sonrası)
   useEffect(() => {
+    if (navTarget) {
+      router.replace(navTarget)
+      return
+    }
     const oturum = localStorage.getItem('fm_oturum')
     if (oturum) {
       const u: OturumKullanici = JSON.parse(oturum)
       router.replace(u.kullanici_tipi === 'Uye' ? '/bugun' : '/admin')
     }
-  }, [router])
+  }, [navTarget, router])
 
   const telGiris = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -79,13 +85,20 @@ export default function GirisPage() {
   }
 
   const oturumKaydet = (tumKullanicilar: OturumKullanici[], aktif: OturumKullanici) => {
-    localStorage.setItem('fm_oturum', JSON.stringify(aktif))
-    if (tumKullanicilar.length > 1) {
-      localStorage.setItem('fm_tum_gruplar', JSON.stringify(tumKullanicilar))
-    } else {
-      localStorage.removeItem('fm_tum_gruplar')
+    try {
+      localStorage.setItem('fm_oturum', JSON.stringify(aktif))
+      const kontrol = localStorage.getItem('fm_oturum')
+      if (!kontrol) throw new Error('localStorage boş döndü')
+      if (tumKullanicilar.length > 1) {
+        localStorage.setItem('fm_tum_gruplar', JSON.stringify(tumKullanicilar))
+      } else {
+        localStorage.removeItem('fm_tum_gruplar')
+      }
+      setNavTarget(aktif.kullanici_tipi === 'Uye' ? '/bugun' : '/admin')
+    } catch {
+      setYukleniyor(false)
+      setHata('Tarayıcı hafızasına yazılamadı. Lütfen özel/gizli sekmeyi kapatıp tekrar deneyin.')
     }
-    window.location.href = aktif.kullanici_tipi === 'Uye' ? '/bugun' : '/admin'
   }
 
   return (
@@ -114,7 +127,7 @@ export default function GirisPage() {
                   onChange={e => setTelNo(e.target.value)}
                   placeholder="05XX XXX XX XX"
                   required
-                  autoComplete="tel"
+                  autoComplete="off"
                   className="w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -132,10 +145,14 @@ export default function GirisPage() {
 
         {/* ADIM 2 — Grup seçimi (çoklu grup) */}
         {adim === 'grup-sec' && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-emerald-400 p-6 space-y-4">
             <div className="text-center space-y-1">
-              <p className="font-semibold text-slate-700">Hangi grup için giriş yapıyorsunuz?</p>
-              <p className="text-xs text-slate-400">{bulunanlar[0]?.ad_soyad}</p>
+              <div className="inline-flex items-center justify-center w-10 h-10 bg-emerald-100 rounded-full mb-2">
+                <span className="text-xl">👥</span>
+              </div>
+              <p className="font-bold text-slate-800">Birden fazla grubunuz var</p>
+              <p className="text-sm text-slate-600">Hangi grup için giriş yapmak istiyorsunuz?</p>
+              <p className="text-xs text-slate-400 font-medium">{bulunanlar[0]?.ad_soyad}</p>
             </div>
             <div className="space-y-2">
               {bulunanlar.map(k => (
