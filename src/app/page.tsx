@@ -57,6 +57,13 @@ export default function GirisPage() {
       return
     }
 
+    // Kasıtlı çıkış bayrağı — aynı oturumda otomatik girişi engeller; sekme kapatılınca temizlenir
+    if (sessionStorage.getItem('fm_cikis')) {
+      sessionStorage.removeItem('fm_cikis')
+      setAdim('tel')
+      return
+    }
+
     const hatirla = localStorage.getItem('fm_hatirla_tel')
     if (!hatirla) {
       setAdim('tel')

@@ -147,6 +147,7 @@ export default function BugunPage() {
     if (kullanici?.grup_id) localStorage.setItem('fm_son_grup_id', kullanici.grup_id)
     localStorage.removeItem('fm_oturum')
     localStorage.removeItem('fm_tum_gruplar')
+    sessionStorage.setItem('fm_cikis', '1')
     router.push('/')
   }
 
