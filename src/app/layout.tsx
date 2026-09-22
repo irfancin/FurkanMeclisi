@@ -7,6 +7,12 @@ const geist = Geist({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Furkan Meclisi — Hatim Takip",
   description: "Günlük cüz okuma takip uygulaması",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Furkan Meclisi',
+  },
+  formatDetection: { telephone: false },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

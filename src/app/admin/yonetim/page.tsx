@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import * as XLSX from 'xlsx'
+import PaylasQR from '@/components/PaylasQR'
 
 interface GrupDonem {
   tur_no: number
@@ -728,6 +729,9 @@ export default function YonetimPage() {
           </div>
         </div>
       )}
+
+      {/* Uygulamayı Paylaş */}
+      <PaylasQR />
     </div>
   )
 }
