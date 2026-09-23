@@ -6,10 +6,11 @@ import { useEffect, useState } from 'react'
 import type { OturumKullanici } from '@/types'
 
 const MENU = [
-  { href: '/admin/raporlar', label: 'Raporlar' },
-  { href: '/admin/yonetim', label: 'Yönetim' },
-  { href: '/admin/rotasyon', label: 'Tur Başlat' },
-  { href: '/admin/loglar', label: 'Giriş Logları' },
+  { href: '/admin/raporlar',     label: 'Raporlar' },
+  { href: '/admin/manuel-kayit', label: '✍️ Manuel Kayıt' },
+  { href: '/admin/yonetim',      label: 'Yönetim' },
+  { href: '/admin/rotasyon',     label: 'Tur Başlat' },
+  { href: '/admin/loglar',       label: 'Giriş Logları' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
