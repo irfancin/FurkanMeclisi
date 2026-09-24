@@ -148,7 +148,7 @@ export default function BugunPage() {
     localStorage.removeItem('fm_oturum')
     localStorage.removeItem('fm_tum_gruplar')
     sessionStorage.setItem('fm_cikis', '1')
-    router.push('/')
+    router.replace('/')
   }
 
   if (yukleniyor) {

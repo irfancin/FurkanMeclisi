@@ -8,6 +8,17 @@
 
 ## Tamamlanan Görevler
 
+### 2026-09-24 — Android Geri Tuşu Çıkış Düzeltmesi (v1.69)
+
+- [x] **`router.push` → `router.replace`:** `bugun/page.tsx` ve `admin/layout.tsx` çıkış fonksiyonlarında değiştirildi — `router.replace('/')` ile `/bugun` tarayıcı geçmişinden çıkarılır; Android geri tuşuyla `/bugun`'a dönüş artık mümkün değil
+- [x] **`fm_cikis` bayrağı erken silinmiyor:** Bayrak `page.tsx`'te form gösterirken artık silinmiyor; yalnızca `oturumKaydet()` (başarılı giriş) anında siliniyor — geri navigasyonunda form korunuyor
+- [x] CLAUDE.md: oturum sistemi ve anti-pattern'ler bölümlerine notlar eklendi
+
+### 2026-09-24 — Çıkış Sonrası Otomatik Giriş Döngüsü Düzeltmesi (v1.68)
+
+- [x] `bugun/page.tsx` `cikis()` fonksiyonuna `sessionStorage.setItem('fm_cikis', '1')` eklendi
+- [x] Commit: `03e4603`
+
 ### 2026-09-24 — Yönetici Adına Manuel Okuma Kaydı (v1.67)
 
 - [x] **Günlük raporda ✍️ Kaydet butonu:** Okumayan üyelerin her satırına hızlı giriş butonu eklendi; mevcut `/api/okuma` POST kullanıyor; optimistic UI ile satır anında Okuyanlar'a geçer

@@ -29,7 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const cikis = () => {
     localStorage.removeItem('fm_oturum')
     sessionStorage.setItem('fm_cikis', '1')
-    router.push('/')
+    router.replace('/')
   }
 
   if (!kullanici) return null

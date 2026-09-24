@@ -9,7 +9,7 @@ Kur'an hatim grubunu yönetmek için geliştirilmiş mobil-öncelikli web uygula
 - **Deploy:** Vercel (otomatik CI/CD — main branch → production)
 - **Repo:** /home/irfan/FurkanMeclisi
 - **Başlatma (local):** `npm run dev` (port 3000)
-- **Güncel versiyon:** v1.67 (`VERSIYON` sabiti `src/app/page.tsx`'te)
+- **Güncel versiyon:** v1.69 (`VERSIYON` sabiti `src/app/page.tsx`'te)
 - **Yapılacaklar:** `yapilacaklar.md` — açık görevler burada takip edilir
 
 ---
@@ -109,6 +109,7 @@ FurkanMeclisi/
 - `localStorage.fm_hatirla_tel` — ilk başarılı girişte kaydedilir, çıkışta silinmez; sonraki açılışta telefon formu gösterilmeden otomatik giriş yapılır; numara artık kayıtlı değilse (401) silinir, ağ hatasında korunur
 - Üye → `/bugun` (toggle ile grup değiştirilebilir), Yönetici → `/admin`
 - Çıkış: `fm_oturum` ve `fm_tum_gruplar` temizlenir; `fm_hatirla_tel` ve `fm_son_grup_id` korunur (sonraki girişte otomatik kullanılır)
+- `sessionStorage.fm_cikis` — kasıtlı çıkış bayrağı; `router.replace('/')` ile sayfayı değiştirince Android geri tuşuyla `/bugun`'a dönüş engellenir; bayrak form gösterilince silinmez, yalnızca `oturumKaydet()` anında silinir (başarılı giriş)
 
 ---
 
@@ -168,6 +169,8 @@ FurkanMeclisi/
 | `parseCuzlar` sonucunu doğrudan kullanmak | Önce `[...new Set(...)]` ile tekilleştir — duplicate cüz girişi donem_atamalari'nda çift satır oluşturur |
 | Düzenleme formunda `autoComplete` bırakmak | `autoComplete="off"` zorunlu — iOS Safari autofill tel_no alanını değiştirip sahte çakışma hatası üretir |
 | Giriş telefon alanında `autoComplete="off"` kullanmak | `autoComplete="tel"` kullan — "off" otodolguyu kaldırır ve kullanıcı manuel yazarken tipoyu önleyemez; Playwright otodolgu kullandığından tipoyu görmez |
+| Çıkış sonrası `router.push('/')` kullanmak | `router.replace('/')` kullan — push `/bugun`'ı geçmişte bırakır; Android geri tuşu oraya döner ve yeniden otomatik giriş tetikler |
+| `sessionStorage.fm_cikis` bayrağını form gösterirken silmek | Bayrağı yalnızca `oturumKaydet()` içinde (başarılı giriş anında) sil — erken silmek, geri navigasyonunda bayrağı yok eder ve otomatik giriş devreye girer |
 | Test SQL'inde gerçek telefon numarası kullanmak | `999000000X` gibi açıkça uydurma numaralar kullan — gerçek DB'de aynı numara `aktif=false` ile kayıtlıysa `ON CONFLICT DO NOTHING` yeni kaydı sessizce atlar, eski pasif kayıt kalır |
 | Test SQL'inde `ON CONFLICT DO NOTHING` ile `aktif=true` garantilemek | `ON CONFLICT` çakışma varsa güncelleme yapmaz; `UPDATE SET aktif=true WHERE tel_no IN (...)` ekle VEYA temizleme SQL'ini önce çalıştırıp temiz INSERT yap |
 

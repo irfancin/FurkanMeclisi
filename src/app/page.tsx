@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { OturumKullanici } from '@/types'
 
-const VERSIYON = 'v1.68'
+const VERSIYON = 'v1.69'
 
 type Adim = 'tel' | 'grup-sec' | 'otomatik'
 
@@ -20,6 +20,7 @@ export default function GirisPage() {
   const oturumKaydet = useCallback((tumKullanicilar: OturumKullanici[], aktif: OturumKullanici) => {
     localStorage.setItem('fm_oturum', JSON.stringify(aktif))
     localStorage.setItem('fm_hatirla_tel', aktif.tel_no)
+    sessionStorage.removeItem('fm_cikis')
     if (tumKullanicilar.length > 1) {
       localStorage.setItem('fm_tum_gruplar', JSON.stringify(tumKullanicilar))
     } else {
@@ -58,8 +59,9 @@ export default function GirisPage() {
     }
 
     // Kasıtlı çıkış bayrağı — aynı oturumda otomatik girişi engeller; sekme kapatılınca temizlenir
+    // Bayrağı burada silmiyoruz: geri tuşuyla /bugun→/ dönüşünde de form gösterilmeye devam etsin
+    // Bayrak yalnızca oturumKaydet() içinde (başarılı giriş anında) siliniyor
     if (sessionStorage.getItem('fm_cikis')) {
-      sessionStorage.removeItem('fm_cikis')
       setAdim('tel')
       return
     }
