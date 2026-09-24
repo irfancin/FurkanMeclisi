@@ -8,6 +8,14 @@
 
 ## Tamamlanan Görevler
 
+### 2026-09-24 — Yönetici Adına Manuel Okuma Kaydı (v1.67)
+
+- [x] **Günlük raporda ✍️ Kaydet butonu:** Okumayan üyelerin her satırına hızlı giriş butonu eklendi; mevcut `/api/okuma` POST kullanıyor; optimistic UI ile satır anında Okuyanlar'a geçer
+- [x] **Manuel Kayıt ekranı (`/admin/manuel-kayit`):** Grup → Üye seç → tarih + gün sayısı slider → Tüm Dönemi Tamamla kısayolu → kaydet öncesi özet → başarı bildirimi
+- [x] **Manuel Kayıt API (`/api/admin/manuel-kayit`):** GET dönem+cüz bilgisi; POST çoklu gün × çoklu cüz upsert; dönem bitiş tarihi koruması
+- [x] **Admin menüsüne ✍️ Manuel Kayıt sekmesi eklendi** (Raporlar'ın hemen yanına)
+- [x] Commit: `04188b0` / versiyon sabiti: `03e4603`
+
 ### 2026-09-13 — Çoklu Cüz Desteği (v1.50)
 
 - [x] Migration 006: `donem_atamalari` unique constraint güncellendi (kullanici+donem+cuz)

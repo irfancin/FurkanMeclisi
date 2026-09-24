@@ -9,7 +9,7 @@ Kur'an hatim grubunu yönetmek için geliştirilmiş mobil-öncelikli web uygula
 - **Deploy:** Vercel (otomatik CI/CD — main branch → production)
 - **Repo:** /home/irfan/FurkanMeclisi
 - **Başlatma (local):** `npm run dev` (port 3000)
-- **Güncel versiyon:** v1.63 (`VERSIYON` sabiti `src/app/page.tsx`'te)
+- **Güncel versiyon:** v1.67 (`VERSIYON` sabiti `src/app/page.tsx`'te)
 - **Yapılacaklar:** `yapilacaklar.md` — açık görevler burada takip edilir
 
 ---
@@ -25,12 +25,13 @@ FurkanMeclisi/
 │   │   ├── globals.css
 │   │   ├── bugun/page.tsx        # Üye günlük ekranı (Okudum butonu)
 │   │   ├── admin/
-│   │   │   ├── layout.tsx        # Admin nav (Raporlar / Yönetim / Tur Başlat / Giriş Logları)
-│   │   │   ├── page.tsx          # → /admin/raporlar yönlendirir
-│   │   │   ├── raporlar/page.tsx # Günlük rapor + tur matrisi
-│   │   │   ├── yonetim/page.tsx  # Grup + üye yönetimi + Excel import
-│   │   │   ├── rotasyon/page.tsx # 3 adımlı tur rotasyonu
-│   │   │   └── loglar/page.tsx   # Giriş logları
+│   │   │   ├── layout.tsx           # Admin nav (Raporlar / Manuel Kayıt / Yönetim / Tur Başlat / Giriş Logları)
+│   │   │   ├── page.tsx             # → /admin/raporlar yönlendirir
+│   │   │   ├── raporlar/page.tsx    # Günlük rapor (✍️ hızlı kayıt butonu) + tur matrisi
+│   │   │   ├── manuel-kayit/page.tsx# Yönetici adına okuma girişi — üye+tarih+gün seçimi
+│   │   │   ├── yonetim/page.tsx     # Grup + üye yönetimi + Excel import
+│   │   │   ├── rotasyon/page.tsx    # 3 adımlı tur rotasyonu
+│   │   │   └── loglar/page.tsx      # Giriş logları
 │   │   └── api/
 │   │       ├── giris/route.ts         # Üye PIN + yönetici tel giriş
 │   │       ├── giris/gruplar/route.ts
@@ -42,12 +43,13 @@ FurkanMeclisi/
 │   │           ├── gruplar/route.ts
 │   │           ├── uyeler/route.ts
 │   │           ├── uyeler/excel/route.ts
-│   │           ├── rapor/route.ts     # Günlük rapor API
-│   │           ├── raporlar/route.ts  # Dönem listesi + matris
-│   │           ├── rotasyon/route.ts  # Tur rotasyonu
+│   │           ├── rapor/route.ts          # Günlük rapor API
+│   │           ├── raporlar/route.ts       # Dönem listesi + matris
+│   │           ├── rotasyon/route.ts       # Tur rotasyonu
+│   │           ├── manuel-kayit/route.ts   # Yönetici adına okuma kaydı (GET: dönem bilgisi / POST: upsert)
 │   │           ├── loglar/route.ts
-│   │           ├── sablon/route.ts    # Excel şablon indirme
-│   │           └── tohum/route.ts     # Seed verisi
+│   │           ├── sablon/route.ts         # Excel şablon indirme
+│   │           └── tohum/route.ts          # Seed verisi
 │   ├── hooks/useAuth.ts
 │   ├── lib/supabase/
 │   │   ├── client.ts
@@ -104,8 +106,9 @@ FurkanMeclisi/
 - `localStorage.fm_oturum` — aktif `OturumKullanici` (`id, ad_soyad, tel_no, grup_id, grup_adi, grup_tipi, kullanici_tipi`)
 - `localStorage.fm_tum_gruplar` — çoklu grupta tüm kayıtlar (toggle için); tek grupta bu key yoktur
 - `localStorage.fm_son_grup_id` — son seçilen grup ID'si; çıkışta ve `grupDegistir()`'da güncellenir, çıkışta silinmez; sonraki çoklu grup girişinde bu grup biliniyorsa seçim ekranı ATLANIR ve direkt giriş yapılır; bilinmiyorsa seçim ekranı Hatim varsayılanla açılır
+- `localStorage.fm_hatirla_tel` — ilk başarılı girişte kaydedilir, çıkışta silinmez; sonraki açılışta telefon formu gösterilmeden otomatik giriş yapılır; numara artık kayıtlı değilse (401) silinir, ağ hatasında korunur
 - Üye → `/bugun` (toggle ile grup değiştirilebilir), Yönetici → `/admin`
-- Çıkış: her iki localStorage anahtarı da temizlenir
+- Çıkış: `fm_oturum` ve `fm_tum_gruplar` temizlenir; `fm_hatirla_tel` ve `fm_son_grup_id` korunur (sonraki girişte otomatik kullanılır)
 
 ---
 
@@ -123,9 +126,16 @@ FurkanMeclisi/
 - cüz_no Excel veya formdan girilebilir; yoksa otomatik en küçük müsait cüz atanır
 
 ### Raporlar
-- **Günlük rapor:** Okumayan (üstte, WA linki dahil) + Okuyan listesi (daraltılmış)
+- **Günlük rapor:** Okumayan (üstte, WA linki + **✍️ Kaydet** butonu) + Okuyan listesi (daraltılmış)
+  - ✍️ Kaydet: `/api/okuma` POST ile bugünün tarihine anında kayıt; optimistic UI ile satır Okuyanlar'a geçer
 - **Tur matrisi:** Üye × gün grid, çift scroll bar (üst + alt), özet toggle
 - KPI kartları: Bugün okuyan sayısı, tur ilerleme %, eksik üyeler
+
+### Manuel Kayıt (v1.67)
+- **Ekran:** `/admin/manuel-kayit` — uygulamayı kullanamayan üyeler adına yönetici giriş yapar
+- **Akış:** Grup → Üye seç → Dönem/cüz özeti görünür → Tarih (dönem sınırında) → Gün sayısı (slider) → Kaydet
+- **Tüm Dönemi Tamamla:** Slider'ı dönem sonuna ayarlayan kısayol butonu
+- **API:** `/api/admin/manuel-kayit` — GET: üyenin dönem + cüz bilgisi; POST: `{kullanici_id, tarih_baslangic, gun_sayisi}` — üyenin tüm cüzleri × tarih aralığı upsert, dönem sonu aşımı koruması var
 
 ---
 
