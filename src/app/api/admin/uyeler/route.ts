@@ -229,8 +229,44 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ hata: 'Eksik parametre.' }, { status: 400 })
 
   const supabase = await createClient()
+  const bugun = bugunTR()
+
+  // Aktif dönem bilgisi için önce grup_id al
+  const { data: kullanici } = await supabase
+    .from('kullanicilar')
+    .select('grup_id')
+    .eq('id', id)
+    .maybeSingle()
+
   const { error } = await supabase.from('kullanicilar').update({ aktif: false }).eq('id', id)
   if (error) return NextResponse.json({ hata: 'Silme işlemi başarısız.' }, { status: 500 })
+
+  if (kullanici?.grup_id) {
+    const { data: aktifDonem } = await supabase
+      .from('donemler')
+      .select('id, bitis_tarihi')
+      .eq('grup_id', kullanici.grup_id)
+      .lte('baslangic_tarihi', bugun)
+      .gte('bitis_tarihi', bugun)
+      .maybeSingle()
+
+    if (aktifDonem) {
+      // Cüz atamasını serbest bırak
+      await supabase
+        .from('donem_atamalari')
+        .delete()
+        .eq('kullanici_id', id)
+        .eq('donem_id', aktifDonem.id)
+
+      // Henüz okunmamış (gelecek tarihli) kayıtları sil; geçmiş okuma geçmişi korunur
+      await supabase
+        .from('okuma_kayitlari')
+        .delete()
+        .eq('kullanici_id', id)
+        .gt('tarih', bugun)
+        .lte('tarih', aktifDonem.bitis_tarihi)
+    }
+  }
 
   return NextResponse.json({ basarili: true })
 }
