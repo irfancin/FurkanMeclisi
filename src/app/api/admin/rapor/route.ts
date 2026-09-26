@@ -77,7 +77,15 @@ export async function GET(req: NextRequest) {
 
   const uye_idler = uyeler.map(u => u.id)
 
-  // Cüz atamaları — kullanici başına birden fazla olabilir
+  // Grup tipini öğren — Zikir gruplarında donem_atamalari kullanılmaz
+  const { data: grupBilgi } = await supabase
+    .from('gruplar')
+    .select('grup_tipi')
+    .eq('id', grup_id)
+    .single()
+  const isZikir = grupBilgi?.grup_tipi === 'Zikir'
+
+  // Cüz atamaları — kullanici başına birden fazla olabilir (Zikir'de boş gelir)
   const { data: atamalar } = await supabase
     .from('donem_atamalari')
     .select('kullanici_id, cuz_no')
@@ -95,18 +103,26 @@ export async function GET(req: NextRequest) {
   // Set: "kullanici_id_cuz_no" → bugün okundu mu?
   const okunanSet = new Set((bugun_okumalar ?? []).map(o => `${o.kullanici_id}_${o.cuz_no}`))
 
-  // Liste: her (kullanıcı × cüz) çifti için bir satır
+  // Liste: Zikir için uyeler'den (cuz_no=0), Hatim için atamalar'dan
   const uyeMap = new Map(uyeler.map(u => [u.id, u]))
-  const liste = (atamalar ?? []).map(a => {
-    const u = uyeMap.get(a.kullanici_id)!
-    return {
-      id: a.kullanici_id,
-      ad_soyad: u.ad_soyad,
-      tel_no: u.tel_no,
-      cuz_no: a.cuz_no,
-      okudu: okunanSet.has(`${a.kullanici_id}_${a.cuz_no}`),
-    }
-  })
+  const liste = isZikir
+    ? uyeler.map(u => ({
+        id: u.id,
+        ad_soyad: u.ad_soyad,
+        tel_no: u.tel_no,
+        cuz_no: 0,
+        okudu: okunanSet.has(`${u.id}_0`),
+      }))
+    : (atamalar ?? []).map(a => {
+        const u = uyeMap.get(a.kullanici_id)!
+        return {
+          id: a.kullanici_id,
+          ad_soyad: u.ad_soyad,
+          tel_no: u.tel_no,
+          cuz_no: a.cuz_no,
+          okudu: okunanSet.has(`${a.kullanici_id}_${a.cuz_no}`),
+        }
+      })
 
   const basMs = new Date(donem.baslangic_tarihi).getTime()
   const bugunMs = new Date(bugun).getTime()

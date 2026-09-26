@@ -9,6 +9,7 @@ interface DonemBilgi {
   cuz_lar: number[]
   okunan_gun: number
   bugun: string
+  zikir?: boolean
 }
 
 function bugunIstanbul(): string {
@@ -205,7 +206,10 @@ export default function ManuelKayitPage() {
               </div>
               <div className="text-right">
                 <p className="text-xs text-emerald-600">
-                  Cüz: <span className="font-semibold">{donemBilgi.cuz_lar.join(', ')}</span>
+                  {donemBilgi.zikir
+                    ? <><span className="font-semibold">Zikir</span></>
+                    : <>Cüz: <span className="font-semibold">{donemBilgi.cuz_lar.join(', ') || '—'}</span></>
+                  }
                 </p>
                 <p className="text-xs text-emerald-600">
                   Okunan: <span className="font-semibold">{donemBilgi.okunan_gun} gün</span>
@@ -275,7 +279,10 @@ export default function ManuelKayitPage() {
                   <span className="font-medium text-emerald-700">{gunSayisi} günlük</span> okuma kaydı girilecek.
                 </p>
                 <p className="text-xs text-slate-400">
-                  Cüz: {donemBilgi.cuz_lar.join(', ')} · Toplam {gunSayisi * donemBilgi.cuz_lar.length} kayıt
+                  {donemBilgi.zikir
+                    ? <>Zikir · Toplam {gunSayisi} kayıt</>
+                    : <>Cüz: {donemBilgi.cuz_lar.join(', ')} · Toplam {gunSayisi * donemBilgi.cuz_lar.length} kayıt</>
+                  }
                 </p>
               </div>
 

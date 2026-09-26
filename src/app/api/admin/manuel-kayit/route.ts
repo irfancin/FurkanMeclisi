@@ -61,8 +61,16 @@ export async function POST(req: NextRequest) {
     .eq('kullanici_id', kullanici_id)
     .eq('donem_id', donem.id)
 
-  if (!atamalar || atamalar.length === 0) {
-    return NextResponse.json({ hata: 'Bu üyenin dönem ataması bulunamadı.' }, { status: 404 })
+  let cuzListesi: { cuz_no: number }[] = atamalar ?? []
+  if (cuzListesi.length === 0) {
+    // Zikir grubunda donem_atamalari kullanılmaz; cuz_no=0 ile kaydedilir
+    const { data: grup } = await supabase
+      .from('gruplar').select('grup_tipi').eq('id', kullanici.grup_id).single()
+    if (grup?.grup_tipi === 'Zikir') {
+      cuzListesi = [{ cuz_no: 0 }]
+    } else {
+      return NextResponse.json({ hata: 'Bu üyenin dönem ataması bulunamadı.' }, { status: 404 })
+    }
   }
 
   // Kayıt tarihlerini oluştur (dönem sonunu aşma)
@@ -79,7 +87,7 @@ export async function POST(req: NextRequest) {
 
   // (kullanici_id × cuz_no × tarih) kombinasyonlarını upsert et
   const kayitlar = tarihler.flatMap(tarih =>
-    atamalar.map(a => ({
+    cuzListesi.map(a => ({
       kullanici_id,
       cuz_no: a.cuz_no,
       tarih,
@@ -97,7 +105,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     basarili: true,
     kaydedilen_gun: tarihler.length,
-    kaydedilen_cuz: atamalar.length,
+    kaydedilen_cuz: cuzListesi.length,
     toplam_kayit: kayitlar.length,
   })
 }
@@ -145,6 +153,14 @@ export async function GET(req: NextRequest) {
     .eq('donem_id', donem.id)
     .order('cuz_no')
 
+  // Zikir grubu kontrolü — cüz ataması olmayanlarda grup tipini kontrol et
+  let isZikir = false
+  if (!atamalar || atamalar.length === 0) {
+    const { data: grup } = await supabase
+      .from('gruplar').select('grup_tipi').eq('id', kullanici.grup_id).single()
+    isZikir = grup?.grup_tipi === 'Zikir'
+  }
+
   // Bugüne kadar kaç gün okundu (distinct tarih)
   const { data: okunanlar } = await supabase
     .from('okuma_kayitlari')
@@ -160,5 +176,6 @@ export async function GET(req: NextRequest) {
     cuz_lar: (atamalar ?? []).map(a => a.cuz_no),
     okunan_gun: okunanGunler.size,
     bugun,
+    zikir: isZikir,
   })
 }
