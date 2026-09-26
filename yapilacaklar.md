@@ -8,6 +8,16 @@
 
 ## Tamamlanan Görevler
 
+### 2026-09-26 — Üye Silme Düzeltmesi + Hatim-4 DB Temizliği (v1.70)
+
+- [x] **`DELETE /api/admin/uyeler`:** Üye soft-delete edilince aktif dönem cüz ataması silinir (cüz yeni üye için serbest kalır); gelecek tarihli okuma kayıtları silinir; geçmiş okuma geçmişi korunur
+- [x] **Hatim-4 DB temizliği:** 870 sahte okuma kaydı silindi (Manuel Kayıt ile tüm dönem toplu girilmişti); yanlışlıkla oluşturulan Tur-2 (dönem + 30 atama) silindi; pasif üye Yeter Kocaman'ın çakışan Tur-1 cüz 22 ataması silindi
+- [x] Commit: `b8fb9d6`
+
+---
+
+## Tamamlanan Görevler
+
 ### 2026-09-24 — Android Geri Tuşu Çıkış Düzeltmesi (v1.69)
 
 - [x] **`router.push` → `router.replace`:** `bugun/page.tsx` ve `admin/layout.tsx` çıkış fonksiyonlarında değiştirildi — `router.replace('/')` ile `/bugun` tarayıcı geçmişinden çıkarılır; Android geri tuşuyla `/bugun`'a dönüş artık mümkün değil

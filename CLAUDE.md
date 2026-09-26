@@ -9,7 +9,7 @@ Kur'an hatim grubunu yönetmek için geliştirilmiş mobil-öncelikli web uygula
 - **Deploy:** Vercel (otomatik CI/CD — main branch → production)
 - **Repo:** /home/irfan/FurkanMeclisi
 - **Başlatma (local):** `npm run dev` (port 3000)
-- **Güncel versiyon:** v1.69 (`VERSIYON` sabiti `src/app/page.tsx`'te)
+- **Güncel versiyon:** v1.70 (`VERSIYON` sabiti `src/app/page.tsx`'te)
 - **Yapılacaklar:** `yapilacaklar.md` — açık görevler burada takip edilir
 
 ---
