@@ -126,8 +126,8 @@ export default function ManuelKayitPage() {
     if (!res.ok) setHata(json.hata ?? 'Kayıt sırasında hata oluştu.')
     else {
       setSonuc({ kaydedilen_gun: json.kaydedilen_gun, kaydedilen_cuz: json.kaydedilen_cuz })
-      // Dönem bilgisini yenile
-      donemYukle(seciliUye)
+      // Dönem bilgisini 2 saniye sonra yenile — başarı mesajının görünmesi için beklenir
+      setTimeout(() => donemYukle(seciliUye), 2000)
     }
     setKayitYukleniyor(false)
   }
