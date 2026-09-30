@@ -1,5 +1,44 @@
 # Değişiklik Geçmişi
 
+## v1.77 — 2026-10-25
+
+### Tur Matrisi — Varsayılan Tur Seçimi Düzeltmesi
+
+**Sorun:** Dönem dropdown'u `tur_no DESC` sıralamasıyla geldiğinden en yeni (henüz başlamamış)
+tura varsayılan olarak atlıyordu. 4. Tur 2026-11-09'da başlayacağından hiç kaydı yoktu;
+matris boş görünüyordu.
+
+**Düzeltme:** `src/app/admin/raporlar/page.tsx`
+- Grup değişince dönem listesi yüklenirken bugünün tarihiyle aktif dönem aranır
+- Aktif dönem bulunursa seçilir; yoksa en son geçmiş dönem; ikisi de yoksa liste[0]
+- Dropdown seçeneklerinde tarih aralığı gösterilir: `3. Tur ● (09-26 – 10-25)`
+- Aktif tur `●` ile işaretlenir
+
+---
+
+## v1.74–v1.76 — 2026-10-25
+
+### Tur Matrisi — Zikir Grubu Desteği
+
+**Sorun:** Zikir grubunda Tur Matrisi tüm üyeleri listelemiyor ve/veya okunan günleri göstermiyordu.
+
+**Kök Neden (v1.74):** `raporlar/route.ts` matris endpoint'i `donem_atamalari` sorguluyor,
+Zikir için bu tablo boş olduğundan fallback'te üyeler `cuz_no=null` ile oluşturuluyordu.
+Oysa okuma kayıtları `cuz_no=0` ile saklanır → anahtar uyuşmazlığı.
+
+**Düzeltmeler:**
+- **v1.74** — `rapor/route.ts` ile aynı `isZikir` pattern'i eklendi: Zikir grubunda
+  `donem_atamalari` atlanır, aktif üyeler `kullanicilar` tablosundan `cuz_no=0` ile alınır
+- **v1.75** — Zikir eşleştirmesi `cuz_no`'dan bağımsız: sadece `kullanici_id + tarih` key'i
+- **v1.76** — DB tarih filtresi Zikir için kaldırıldı; tüm okuma kayıtları çekilip `gunSet`
+  ile bellekte filtreleniyor (donem tarihi format uyumsuzluğu riski bertaraf edildi);
+  günler listesi timezone kaymasına karşı UTC öğlen saati (`T12:00:00Z`) bazlı hesaplandı
+
+**Gerçek sorun** Tanı butonu ile tespit edildi: 179 kayıt mevcuttu, tarih uyuşmazlığı yoktu.
+Asıl neden `v1.77`'deki dropdown sorunundan kaynaklanıyordu.
+
+---
+
 ## v1.71 — 2026-09-26
 
 ### Zikir Grubu Düzeltmeleri

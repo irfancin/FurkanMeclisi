@@ -9,7 +9,7 @@ Kur'an hatim grubunu yönetmek için geliştirilmiş mobil-öncelikli web uygula
 - **Deploy:** Vercel (otomatik CI/CD — main branch → production)
 - **Repo:** /home/irfan/FurkanMeclisi
 - **Başlatma (local):** `npm run dev` (port 3000)
-- **Güncel versiyon:** v1.70 (`VERSIYON` sabiti `src/app/page.tsx`'te)
+- **Güncel versiyon:** v1.77 (`VERSIYON` sabiti `src/app/page.tsx`'te)
 - **Yapılacaklar:** `yapilacaklar.md` — açık görevler burada takip edilir
 
 ---
@@ -90,6 +90,8 @@ FurkanMeclisi/
 - **En son dönem sorgusu:** `ORDER BY tur_no DESC LIMIT 1` — aktiflik filtresi yok, her zaman en son tur alınır
 - **Tarih formatı:** `sv-SE` locale ile `YYYY-MM-DD` — Türkiye saati: `{ timeZone: 'Europe/Istanbul' }`
 - **Zikir okuma kaydı:** `cuz_no = 0` ile `okuma_kayitlari`'na eklenir — "Zikirleri Tamamladım" butonu bu kaydı oluşturur/siler
+- **Zikir matris sorgusu:** `raporlar/route.ts`'te Zikir için `donem_atamalari` kullanılmaz; `kullanicilar` tablosundan `cuz_no=0` ile üye listesi alınır; okuma eşleştirmesi `kullanici_id + tarih` (cuz_no dahil edilmez); DB tarih filtresi yerine tüm kayıtlar çekilip `gunSet` ile bellekte filtrelenir
+- **Matris varsayılan tur:** Dropdown yüklenirken bugünkü tarihe göre aktif dönem seçilir; aktif yoksa son geçmiş dönem; `liste[0]` (en yeni, gelecek tur olabilir) doğrudan seçilmez
 - **OturumKullanici:** `grup_adi` ve `grup_tipi` alanları eklendi (v1.53); `fm_tum_gruplar` localStorage anahtarı çoklu grup listesini tutar
 
 ---
@@ -163,6 +165,9 @@ FurkanMeclisi/
 | Telefon tekrar kontrolünü global unique olarak almak | Sadece aynı grup içinde unique — başka gruplarda aynı tel olabilir |
 | Blob URL ile dosya indirme wait_for + `visible` state | `attached` state kullan (display:none olabilir) |
 | `donemler` sorgusunda aktif/pasif ayrımı | Yoktur — her zaman en son `tur_no` alınır |
+| Matris dropdown'da `liste[0]`'ı (en yeni tur) direkt seçmek | En yeni tur henüz başlamamış olabilir; bugünkü tarihle aktif dönem ara, yoksa son geçmiş dönem seç |
+| Zikir matrisinde `donem_atamalari`'ndan üye listesi oluşturmak | Zikir grubunda bu tablo boştur; `kullanicilar` tablosundan al, `cuz_no=0` ata |
+| Zikir matris eşleştirmesinde `cuz_no`'yu key'e dahil etmek | Zikir okuma kayıtları `cuz_no=0` ile saklanır ama belge tutarsızlığı riski var; yalnızca `kullanici_id + tarih` kullan |
 | `donem_atamalari`'nda `.single()` veya `.maybeSingle()` kullanmak | Bir kullanıcının birden fazla cüzü olabilir — `.order('cuz_no')` ile tüm satırları al; geçici PIN için `.order('cuz_no', { ascending: true })` ile en küçük cüzü kullan |
 | `okuma_kayitlari` sorgusuyla distinct gün saymak | `new Set(rows.map(o => o.tarih)).size` kullan — multi-cüz günde birden fazla satır oluşturur |
 | `okuma_kayitlari` upsert'te `onConflict: 'kullanici_id,tarih'` | Yeni constraint: `'kullanici_id,tarih,cuz_no'` |
