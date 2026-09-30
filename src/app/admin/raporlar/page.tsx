@@ -120,7 +120,15 @@ export default function RaporlarPage() {
       .then(r => r.json()).then(d => {
         const liste: Donem[] = d.donemler ?? []
         setDonemler(liste)
-        if (liste.length) setSeciliDonem(liste[0].id)
+        if (liste.length) {
+          const bugun = new Date().toISOString().split('T')[0]
+          const aktif = liste.find(d =>
+            d.baslangic_tarihi.split('T')[0] <= bugun &&
+            d.bitis_tarihi.split('T')[0] >= bugun
+          )
+          const sonGecmis = liste.find(d => d.bitis_tarihi.split('T')[0] < bugun)
+          setSeciliDonem((aktif ?? sonGecmis ?? liste[0]).id)
+        }
       })
   }, [seciliGrup, raporYukle])
 
@@ -194,7 +202,17 @@ export default function RaporlarPage() {
           </select>
           <select value={seciliDonem} onChange={e => setSeciliDonem(e.target.value)}
             className="border border-sky-300 rounded-full px-3 py-1.5 text-xs text-sky-800 bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-400">
-            {donemler.map(d => <option key={d.id} value={d.id}>{d.tur_no}. Tur</option>)}
+            {donemler.map(d => {
+              const bugun = new Date().toISOString().split('T')[0]
+              const bas = d.baslangic_tarihi.split('T')[0]
+              const bit = d.bitis_tarihi.split('T')[0]
+              const aktif = bas <= bugun && bit >= bugun
+              return (
+                <option key={d.id} value={d.id}>
+                  {d.tur_no}. Tur {aktif ? '●' : ''} ({bas.slice(5)} – {bit.slice(5)})
+                </option>
+              )
+            })}
           </select>
           <button onClick={matrisYukle}
             className="bg-sky-500 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-sky-600 transition-colors">
