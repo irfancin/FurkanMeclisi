@@ -160,28 +160,33 @@ export async function GET(req: NextRequest) {
 
     const uye_idler = uyeListesi.map(u => u.kullanici_id)
 
-    const { data: okumalar } = uye_idler.length > 0
-      ? await supabase
-          .from('okuma_kayitlari')
-          .select('kullanici_id, tarih, cuz_no')
-          .in('kullanici_id', uye_idler)
-          .gte('tarih', donem.baslangic_tarihi)
-          .lte('tarih', donem.bitis_tarihi)
-      : { data: [] }
-
-    // 30 günlük tarih listesi
+    // 30 günlük tarih listesi — donem tarihinin timestamp kısmını at
+    const donemBas = donem.baslangic_tarihi.split('T')[0]
+    const donemBitis = donem.bitis_tarihi.split('T')[0]
     const gunler: string[] = []
-    const bas = new Date(donem.baslangic_tarihi)
+    const bas = new Date(donemBas + 'T12:00:00Z') // öğlen saati — timezone kaymasını önler
     for (let i = 0; i < 30; i++) {
       const t = new Date(bas)
-      t.setDate(t.getDate() + i)
+      t.setUTCDate(t.getUTCDate() + i)
       gunler.push(t.toISOString().split('T')[0])
     }
+    const gunSet = new Set(gunler)
 
     let satirlar
     if (isZikir) {
-      // Zikir: cuz_no değerinden bağımsız — günde herhangi bir kayıt varsa "okudu"
-      const zikirOkumaSet = new Set((okumalar ?? []).map(o => `${o.kullanici_id}_${o.tarih}`))
+      // Zikir: DB tarih filtresi yerine bellekte filtre — format uyumsuzluğunu önler
+      const { data: tumZikirOkumalari } = uye_idler.length > 0
+        ? await supabase
+            .from('okuma_kayitlari')
+            .select('kullanici_id, tarih')
+            .in('kullanici_id', uye_idler)
+        : { data: [] }
+
+      const zikirOkumaSet = new Set(
+        (tumZikirOkumalari ?? [])
+          .filter(o => gunSet.has(o.tarih))
+          .map(o => `${o.kullanici_id}_${o.tarih}`)
+      )
       satirlar = uyeListesi.map(u => ({
         kullanici_id: u.kullanici_id,
         ad_soyad: u.ad_soyad,
@@ -190,6 +195,15 @@ export async function GET(req: NextRequest) {
         toplam: gunler.filter(g => zikirOkumaSet.has(`${u.kullanici_id}_${g}`)).length,
       }))
     } else {
+      const { data: okumalar } = uye_idler.length > 0
+        ? await supabase
+            .from('okuma_kayitlari')
+            .select('kullanici_id, tarih, cuz_no')
+            .in('kullanici_id', uye_idler)
+            .gte('tarih', donemBas)
+            .lte('tarih', donemBitis)
+        : { data: [] }
+
       // Hatim: anahtar kullanici_id + tarih + cuz_no (çoklu cüz desteği)
       const okumaSet = new Set((okumalar ?? []).map(o => `${o.kullanici_id}_${o.tarih}_${o.cuz_no}`))
       satirlar = uyeListesi.map(u => ({
