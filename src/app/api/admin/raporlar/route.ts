@@ -108,22 +108,19 @@ export async function GET(req: NextRequest) {
 
     if (!donem) return NextResponse.json({ hata: 'Dönem bulunamadı.' }, { status: 404 })
 
-    const { data: atamalar } = await supabase
-      .from('donem_atamalari')
-      .select('kullanici_id, cuz_no, kullanicilar(ad_soyad)')
-      .eq('donem_id', donem_id)
+    // Grup tipini öğren — Zikir gruplarında donem_atamalari kullanılmaz
+    const { data: grupBilgi } = await supabase
+      .from('gruplar')
+      .select('grup_tipi')
+      .eq('id', grup_id)
+      .single()
+    const isZikir = grupBilgi?.grup_tipi === 'Zikir'
 
-    // donem_atamalari boşsa grubun aktif üyelerini kullan (cüz ataması henüz yoksa)
     type UyeSatir = { kullanici_id: string; ad_soyad: string; cuz_no: number | null }
     let uyeListesi: UyeSatir[]
 
-    if (atamalar && atamalar.length > 0) {
-      uyeListesi = atamalar.map(a => ({
-        kullanici_id: a.kullanici_id,
-        ad_soyad: (a.kullanicilar as unknown as { ad_soyad: string } | null)?.ad_soyad ?? '',
-        cuz_no: a.cuz_no,
-      })).sort((a, b) => (a.cuz_no ?? 99) - (b.cuz_no ?? 99))
-    } else {
+    if (isZikir) {
+      // Zikir: donem_atamalari kullanılmaz, tüm aktif üyeler cuz_no=0 ile
       const { data: aktifUyeler } = await supabase
         .from('kullanicilar')
         .select('id, ad_soyad')
@@ -132,8 +129,33 @@ export async function GET(req: NextRequest) {
         .eq('kullanici_tipi', 'Uye')
         .order('ad_soyad')
       uyeListesi = (aktifUyeler ?? []).map(u => ({
-        kullanici_id: u.id, ad_soyad: u.ad_soyad, cuz_no: null,
+        kullanici_id: u.id, ad_soyad: u.ad_soyad, cuz_no: 0,
       }))
+    } else {
+      const { data: atamalar } = await supabase
+        .from('donem_atamalari')
+        .select('kullanici_id, cuz_no, kullanicilar(ad_soyad)')
+        .eq('donem_id', donem_id)
+
+      if (atamalar && atamalar.length > 0) {
+        uyeListesi = atamalar.map(a => ({
+          kullanici_id: a.kullanici_id,
+          ad_soyad: (a.kullanicilar as unknown as { ad_soyad: string } | null)?.ad_soyad ?? '',
+          cuz_no: a.cuz_no,
+        })).sort((a, b) => (a.cuz_no ?? 99) - (b.cuz_no ?? 99))
+      } else {
+        // donem_atamalari boşsa grubun aktif üyelerini kullan (cüz ataması henüz yoksa)
+        const { data: aktifUyeler } = await supabase
+          .from('kullanicilar')
+          .select('id, ad_soyad')
+          .eq('grup_id', grup_id)
+          .eq('aktif', true)
+          .eq('kullanici_tipi', 'Uye')
+          .order('ad_soyad')
+        uyeListesi = (aktifUyeler ?? []).map(u => ({
+          kullanici_id: u.id, ad_soyad: u.ad_soyad, cuz_no: null,
+        }))
+      }
     }
 
     const uye_idler = uyeListesi.map(u => u.kullanici_id)
