@@ -30,6 +30,7 @@ function tarihTR(iso: string) {
 }
 
 type Sekme = 'gunluk' | 'matris'
+type DebugBilgi = Record<string, unknown> | null
 
 function waLink(tel: string) {
   const d = tel.replace(/\D/g, '')
@@ -66,6 +67,17 @@ export default function RaporlarPage() {
   const [matris, setMatris] = useState<{ gunler: string[]; satirlar: MatrisSatir[] } | null>(null)
   const [matrisYukleniyor, setMatrisYukleniyor] = useState(false)
   const [ozetGoster, setOzetGoster] = useState(false)
+  const [debugBilgi, setDebugBilgi] = useState<DebugBilgi>(null)
+  const [debugYukleniyor, setDebugYukleniyor] = useState(false)
+
+  const debugCalistir = async () => {
+    if (!seciliGrup) return
+    setDebugYukleniyor(true)
+    const res = await fetch(`/api/admin/debug?grup_id=${seciliGrup}`)
+    const json = await res.json()
+    setDebugBilgi(json)
+    setDebugYukleniyor(false)
+  }
   const [kopyalandi, setKopyalandi] = useState(false)
   const [kayitGiriliyor, setKayitGiriliyor] = useState<Set<string>>(new Set())
   const topScrollRef = useRef<HTMLDivElement>(null)
@@ -187,6 +199,10 @@ export default function RaporlarPage() {
           <button onClick={matrisYukle}
             className="bg-sky-500 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-sky-600 transition-colors">
             Göster
+          </button>
+          <button onClick={debugCalistir} disabled={debugYukleniyor}
+            className="bg-amber-500 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-amber-600 transition-colors disabled:opacity-50">
+            {debugYukleniyor ? '⏳' : '🔍 Tanı'}
           </button>
           {matris && (
             <button onClick={() => setOzetGoster(o => !o)}
@@ -375,6 +391,58 @@ export default function RaporlarPage() {
               </details>
             )}
           </>)}
+        </div>
+      )}
+
+      {/* ---- DEBUG PANELİ ---- */}
+      {sekme === 'matris' && debugBilgi && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-amber-800">🔍 Tanı Sonucu</span>
+            <button onClick={() => setDebugBilgi(null)} className="text-amber-600 hover:text-amber-800">✕ Kapat</button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-white rounded-lg p-3 border border-amber-100">
+              <p className="text-slate-500">Grup</p>
+              <p className="font-medium text-slate-800">{String((debugBilgi.grup as Record<string,unknown>)?.grup_adi ?? '?')} — {String((debugBilgi.grup as Record<string,unknown>)?.grup_tipi ?? '?')}</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 border border-amber-100">
+              <p className="text-slate-500">Aktif Üye</p>
+              <p className="font-medium text-slate-800">{String(debugBilgi.uye_sayisi ?? 0)} kişi</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 border border-amber-100">
+              <p className="text-slate-500">Toplam Okuma Kaydı</p>
+              <p className={`font-bold ${Number(debugBilgi.toplam_okuma_kaydi) === 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                {String(debugBilgi.toplam_okuma_kaydi)} kayıt
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-3 border border-amber-100">
+              <p className="text-slate-500">Sorgu Hatası</p>
+              <p className={`font-medium ${debugBilgi.okuma_sorgu_hatasi ? 'text-red-600' : 'text-emerald-600'}`}>
+                {debugBilgi.okuma_sorgu_hatasi ? String(debugBilgi.okuma_sorgu_hatasi) : 'Yok ✓'}
+              </p>
+            </div>
+          </div>
+          {(debugBilgi.donemler as unknown[])?.length ? (
+            <div className="bg-white rounded-lg p-3 border border-amber-100">
+              <p className="text-slate-500 mb-1">Dönem Tarihleri</p>
+              {(debugBilgi.donemler as Array<Record<string,unknown>>).map(d => (
+                <p key={String(d.id)} className="text-slate-700">{String(d.tur_no)}. Tur: {String(d.baslangic_tarihi)} → {String(d.bitis_tarihi)}</p>
+              ))}
+            </div>
+          ) : null}
+          {(debugBilgi.son_20_okuma as unknown[])?.length ? (
+            <div className="bg-white rounded-lg p-3 border border-amber-100">
+              <p className="text-slate-500 mb-1">Son Okuma Kayıtları</p>
+              {(debugBilgi.son_20_okuma as Array<Record<string,unknown>>).slice(0, 5).map((o, i) => (
+                <p key={i} className="text-slate-700">tarih: {String(o.tarih)}, cuz_no: {String(o.cuz_no)}, kullanici: ...{String(o.kullanici_id).slice(-6)}</p>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+              <p className="text-red-700 font-medium">⚠️ Bu üyeler için hiç okuma kaydı bulunamadı</p>
+            </div>
+          )}
         </div>
       )}
 
