@@ -169,9 +169,6 @@ export async function GET(req: NextRequest) {
           .lte('tarih', donem.bitis_tarihi)
       : { data: [] }
 
-    // Anahtar: "kullanici_id_tarih_cuz_no" — çoklu cüz desteği
-    const okumaSet = new Set((okumalar ?? []).map(o => `${o.kullanici_id}_${o.tarih}_${o.cuz_no}`))
-
     // 30 günlük tarih listesi
     const gunler: string[] = []
     const bas = new Date(donem.baslangic_tarihi)
@@ -181,13 +178,28 @@ export async function GET(req: NextRequest) {
       gunler.push(t.toISOString().split('T')[0])
     }
 
-    const satirlar = uyeListesi.map(u => ({
-      kullanici_id: u.kullanici_id,
-      ad_soyad: u.ad_soyad,
-      cuz_no: u.cuz_no,
-      gunler: gunler.map(g => ({ tarih: g, okudu: okumaSet.has(`${u.kullanici_id}_${g}_${u.cuz_no}`) })),
-      toplam: gunler.filter(g => okumaSet.has(`${u.kullanici_id}_${g}_${u.cuz_no}`)).length,
-    }))
+    let satirlar
+    if (isZikir) {
+      // Zikir: cuz_no değerinden bağımsız — günde herhangi bir kayıt varsa "okudu"
+      const zikirOkumaSet = new Set((okumalar ?? []).map(o => `${o.kullanici_id}_${o.tarih}`))
+      satirlar = uyeListesi.map(u => ({
+        kullanici_id: u.kullanici_id,
+        ad_soyad: u.ad_soyad,
+        cuz_no: u.cuz_no,
+        gunler: gunler.map(g => ({ tarih: g, okudu: zikirOkumaSet.has(`${u.kullanici_id}_${g}`) })),
+        toplam: gunler.filter(g => zikirOkumaSet.has(`${u.kullanici_id}_${g}`)).length,
+      }))
+    } else {
+      // Hatim: anahtar kullanici_id + tarih + cuz_no (çoklu cüz desteği)
+      const okumaSet = new Set((okumalar ?? []).map(o => `${o.kullanici_id}_${o.tarih}_${o.cuz_no}`))
+      satirlar = uyeListesi.map(u => ({
+        kullanici_id: u.kullanici_id,
+        ad_soyad: u.ad_soyad,
+        cuz_no: u.cuz_no,
+        gunler: gunler.map(g => ({ tarih: g, okudu: okumaSet.has(`${u.kullanici_id}_${g}_${u.cuz_no}`) })),
+        toplam: gunler.filter(g => okumaSet.has(`${u.kullanici_id}_${g}_${u.cuz_no}`)).length,
+      }))
+    }
 
     return NextResponse.json({ donem, gunler, satirlar })
   }
