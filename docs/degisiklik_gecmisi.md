@@ -1,5 +1,24 @@
 # Değişiklik Geçmişi
 
+## v1.79 — 2026-10-05
+
+### Günlük Rapor — Yönetici Kaydı Görsel Ayırt Edici
+
+Yönetici adına girilen okuma kayıtları okuyanlar listesinde farklı gösterilir:
+- Satır arka planı amber (açık sarı)
+- İsmin başında `*` işareti (amber renkte)
+
+**Değişiklikler:**
+- `supabase/migrations/009_manuel_mi.sql` — `okuma_kayitlari.manuel_mi boolean DEFAULT false` eklendi
+- `src/app/api/okuma/route.ts` — POST body'den `manuel_mi` alınıp upsert'e geçirildi
+- `src/app/api/admin/manuel-kayit/route.ts` — tüm kayıtlara `manuel_mi: true` eklendi
+- `src/app/api/admin/rapor/route.ts` — `manuel_mi` seçilip liste öğelerine dahil edildi
+- `src/app/admin/raporlar/page.tsx` — `GunlukUye.manuel_mi`, optimistic UI güncellendi; liste görsel fark
+
+> **Not:** Migration 009 Supabase'e uygulanmadan özellik aktif olmaz (`supabase db push` veya dashboard).
+
+---
+
 ## v1.78 — 2026-10-05
 
 ### Günlük Rapor — Okuyanlar Listesine Saat ve Sıralama Eklendi

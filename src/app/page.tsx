@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { OturumKullanici } from '@/types'
 
-const VERSIYON = 'v1.78'
+const VERSIYON = 'v1.79'
 
 type Adim = 'tel' | 'grup-sec' | 'otomatik'
 

@@ -9,7 +9,7 @@ interface MatrisSatir {
   gunler: { tarih: string; okudu: boolean }[]
 }
 interface GunlukUye {
-  id: string; ad_soyad: string; tel_no: string; cuz_no: number | null; okudu: boolean; okunma_saati?: string | null
+  id: string; ad_soyad: string; tel_no: string; cuz_no: number | null; okudu: boolean; okunma_saati?: string | null; manuel_mi?: boolean
 }
 interface Rapor {
   donem: { tur_no: number; baslangic_tarihi: string; bitis_tarihi: string }
@@ -171,7 +171,7 @@ export default function RaporlarPage() {
       const res = await fetch('/api/okuma', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kullanici_id, cuz_no }),
+        body: JSON.stringify({ kullanici_id, cuz_no, manuel_mi: true }),
       })
       if (res.ok) {
         // Optimistic: o satırı okudu olarak işaretle
@@ -181,7 +181,7 @@ export default function RaporlarPage() {
             ...prev,
             uyeler: prev.uyeler.map(u =>
               u.id === kullanici_id && u.cuz_no === cuz_no
-                ? { ...u, okudu: true, okunma_saati: new Date().toISOString() }
+                ? { ...u, okudu: true, okunma_saati: new Date().toISOString(), manuel_mi: true }
                 : u
             ),
             okuyanlar: prev.okuyanlar + 1,
@@ -437,9 +437,13 @@ export default function RaporlarPage() {
                 </summary>
                 <ul className="divide-y divide-slate-100 border-t border-slate-100">
                   {okuyanSirali.map(u => (
-                    <li key={`${u.id}_${u.cuz_no}`} className="flex items-center justify-between px-4 py-3">
+                    <li key={`${u.id}_${u.cuz_no}`}
+                      className={`flex items-center justify-between px-4 py-3 ${u.manuel_mi ? 'bg-amber-50' : ''}`}>
                       <div>
-                        <p className="text-sm font-medium text-slate-700">{u.ad_soyad}</p>
+                        <p className="text-sm font-medium text-slate-700">
+                          {u.manuel_mi && <span className="text-amber-500 mr-1">*</span>}
+                          {u.ad_soyad}
+                        </p>
                         <p className="text-xs text-slate-400">{u.cuz_no ? `${u.cuz_no}. Cüz` : '—'}</p>
                       </div>
                       <div className="flex items-center gap-3">

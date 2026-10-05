@@ -7,7 +7,7 @@ function bugunTR() {
 
 // Bugün okudum işareti
 export async function POST(req: NextRequest) {
-  const { kullanici_id, cuz_no } = await req.json()
+  const { kullanici_id, cuz_no, manuel_mi } = await req.json()
 
   if (!kullanici_id || cuz_no === undefined) {
     return NextResponse.json({ hata: 'Eksik parametre.' }, { status: 400 })
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const { error } = await supabase
     .from('okuma_kayitlari')
     .upsert(
-      { kullanici_id, tarih: bugun, cuz_no },
+      { kullanici_id, tarih: bugun, cuz_no, manuel_mi: !!manuel_mi },
       { onConflict: 'kullanici_id,tarih,cuz_no' }
     )
 

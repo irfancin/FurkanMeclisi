@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
       kullanici_id,
       cuz_no: a.cuz_no,
       tarih,
+      manuel_mi: true,
     }))
   )
 
