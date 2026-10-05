@@ -96,12 +96,16 @@ export async function GET(req: NextRequest) {
   // Bugünkü okuma kayıtları (cüz bazlı)
   const { data: bugun_okumalar } = await supabase
     .from('okuma_kayitlari')
-    .select('kullanici_id, cuz_no')
+    .select('kullanici_id, cuz_no, okunma_saati')
     .in('kullanici_id', uye_idler)
     .eq('tarih', bugun)
 
   // Set: "kullanici_id_cuz_no" → bugün okundu mu?
   const okunanSet = new Set((bugun_okumalar ?? []).map(o => `${o.kullanici_id}_${o.cuz_no}`))
+  // Map: "kullanici_id_cuz_no" → okunma_saati
+  const okunmaSaatiMap = new Map<string, string>(
+    (bugun_okumalar ?? []).map(o => [`${o.kullanici_id}_${o.cuz_no}`, o.okunma_saati ?? ''])
+  )
 
   // Liste: Zikir için uyeler'den (cuz_no=0), Hatim için atamalar'dan
   const uyeMap = new Map(uyeler.map(u => [u.id, u]))
@@ -112,6 +116,7 @@ export async function GET(req: NextRequest) {
         tel_no: u.tel_no,
         cuz_no: 0,
         okudu: okunanSet.has(`${u.id}_0`),
+        okunma_saati: okunmaSaatiMap.get(`${u.id}_0`) ?? null,
       }))
     : (atamalar ?? []).map(a => {
         const u = uyeMap.get(a.kullanici_id)!
@@ -121,6 +126,7 @@ export async function GET(req: NextRequest) {
           tel_no: u.tel_no,
           cuz_no: a.cuz_no,
           okudu: okunanSet.has(`${a.kullanici_id}_${a.cuz_no}`),
+          okunma_saati: okunmaSaatiMap.get(`${a.kullanici_id}_${a.cuz_no}`) ?? null,
         }
       })
 

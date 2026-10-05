@@ -9,7 +9,7 @@ interface MatrisSatir {
   gunler: { tarih: string; okudu: boolean }[]
 }
 interface GunlukUye {
-  id: string; ad_soyad: string; tel_no: string; cuz_no: number | null; okudu: boolean
+  id: string; ad_soyad: string; tel_no: string; cuz_no: number | null; okudu: boolean; okunma_saati?: string | null
 }
 interface Rapor {
   donem: { tur_no: number; baslangic_tarihi: string; bitis_tarihi: string }
@@ -41,6 +41,14 @@ function bugunTR() {
   return new Date().toLocaleDateString('tr-TR', {
     timeZone: 'Europe/Istanbul',
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  })
+}
+
+function saatTR(iso: string) {
+  return new Date(iso).toLocaleTimeString('tr-TR', {
+    timeZone: 'Europe/Istanbul',
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
 
@@ -78,6 +86,8 @@ export default function RaporlarPage() {
     setDebugBilgi(json)
     setDebugYukleniyor(false)
   }
+  type SiralamaTipi = 'cuz' | 'saat'
+  const [okuyanSiralama, setOkuyanSiralama] = useState<SiralamaTipi>('cuz')
   const [kopyalandi, setKopyalandi] = useState(false)
   const [kayitGiriliyor, setKayitGiriliyor] = useState<Set<string>>(new Set())
   const topScrollRef = useRef<HTMLDivElement>(null)
@@ -145,6 +155,14 @@ export default function RaporlarPage() {
 
   const okumayan = rapor?.uyeler.filter(u => !u.okudu) ?? []
   const okuyan = rapor?.uyeler.filter(u => u.okudu) ?? []
+  const okuyanSirali = [...okuyan].sort((a, b) => {
+    if (okuyanSiralama === 'saat') {
+      const sa = a.okunma_saati ?? ''
+      const sb = b.okunma_saati ?? ''
+      return sb.localeCompare(sa) // en son kaydedilen en üstte
+    }
+    return (a.cuz_no ?? 0) - (b.cuz_no ?? 0)
+  })
 
   const kayitGir = async (kullanici_id: string, cuz_no: number) => {
     const key = `${kullanici_id}_${cuz_no}`
@@ -162,7 +180,9 @@ export default function RaporlarPage() {
           return {
             ...prev,
             uyeler: prev.uyeler.map(u =>
-              u.id === kullanici_id && u.cuz_no === cuz_no ? { ...u, okudu: true } : u
+              u.id === kullanici_id && u.cuz_no === cuz_no
+                ? { ...u, okudu: true, okunma_saati: new Date().toISOString() }
+                : u
             ),
             okuyanlar: prev.okuyanlar + 1,
           }
@@ -393,16 +413,41 @@ export default function RaporlarPage() {
                 <summary className="px-4 py-3 flex items-center gap-2 cursor-pointer hover:bg-slate-50 list-none">
                   <span className="w-2 h-2 rounded-full bg-emerald-400" />
                   <span className="text-sm font-semibold text-slate-700">Okuyanlar ({okuyan.length} kişi)</span>
-                  <span className="ml-auto text-slate-400 text-xs">▼</span>
+                  <div className="ml-auto flex items-center gap-1.5" onClick={e => e.preventDefault()}>
+                    <button
+                      onClick={() => setOkuyanSiralama('cuz')}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                        okuyanSiralama === 'cuz'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}>
+                      Cüz ⇅
+                    </button>
+                    <button
+                      onClick={() => setOkuyanSiralama('saat')}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                        okuyanSiralama === 'saat'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}>
+                      Saat ⇅
+                    </button>
+                    <span className="text-slate-400 text-xs ml-1">▼</span>
+                  </div>
                 </summary>
                 <ul className="divide-y divide-slate-100 border-t border-slate-100">
-                  {okuyan.map(u => (
-                    <li key={u.id} className="flex items-center justify-between px-4 py-3">
+                  {okuyanSirali.map(u => (
+                    <li key={`${u.id}_${u.cuz_no}`} className="flex items-center justify-between px-4 py-3">
                       <div>
                         <p className="text-sm font-medium text-slate-700">{u.ad_soyad}</p>
                         <p className="text-xs text-slate-400">{u.cuz_no ? `${u.cuz_no}. Cüz` : '—'}</p>
                       </div>
-                      <span className="text-emerald-500 text-lg">✓</span>
+                      <div className="flex items-center gap-3">
+                        {u.okunma_saati && (
+                          <span className="text-xs text-slate-400 tabular-nums">{saatTR(u.okunma_saati)}</span>
+                        )}
+                        <span className="text-emerald-500 text-lg">✓</span>
+                      </div>
                     </li>
                   ))}
                 </ul>

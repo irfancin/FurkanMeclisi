@@ -1,5 +1,52 @@
 # Değişiklik Geçmişi
 
+## v1.78 — 2026-10-05
+
+### Günlük Rapor — Okuyanlar Listesine Saat ve Sıralama Eklendi
+
+**Motivasyon:** Yönetici yanlış üye adına okuma kaydı girdiğinde "en son kimi kaydettim?"
+sorusunu yanıtlayabilmek için okuyanlar listesine kayıt saati ve sıralama toggle'ı eklendi.
+
+**Değişiklikler:**
+
+`src/app/api/admin/rapor/route.ts`
+- `bugun_okumalar` sorgusuna `okunma_saati` alanı eklendi
+- `okunmaSaatiMap` ile her `kullanici_id_cuz_no` çiftine kayıt saati eşlendi
+- `liste` içindeki her satıra `okunma_saati` alanı eklendi
+
+`src/app/admin/raporlar/page.tsx`
+- `GunlukUye` interface'e `okunma_saati` alanı eklendi
+- `saatTR()` yardımcı fonksiyonu eklendi (Istanbul timezone, HH:mm)
+- `okuyanSiralama` state'i eklendi: `'cuz'` (varsayılan) | `'saat'`
+- `okuyanSirali` türetildi: cüz sırası artan, saat sırası azalan (en son kaydedilen üstte)
+- Okuyanlar başlığına **Cüz ⇅ / Saat ⇅** toggle butonları eklendi
+- Her satırda kayıt saati `HH:mm` formatında gösterilir
+- Optimistic UI (`✍️ Kaydet`) `okunma_saati: new Date().toISOString()` ile güncellendi
+
+---
+
+## 2026-10-01 — Bildirim Sistemi Araştırması
+
+Okumayan üyelere otomatik hatırlatma göndermek için teknik seçenekler araştırıldı.
+Araştırma sonuçları PDF rapor olarak belgelendi.
+
+**Değerlendirilen seçenekler:**
+- Web Push Notifications (Service Worker + VAPID) — ücretsiz, Android'de tam çalışıyor
+- WhatsApp Business API (Meta resmi) — ~1 TL/ay, en yüksek erişim oranı
+- Telegram Bot — ücretsiz, Telegram kurulu olması gerekiyor
+- SMS / Netgsm — ~63 TL/ay
+- Twilio Voice (otomatik arama) — ~2.940 TL/ay, uygun değil
+
+**Karar:** Henüz uygulamaya geçilmedi. İki aşamalı yaklaşım planlandı:
+1. Web Push + Vercel Cron (kısa vadeli, ücretsiz)
+2. WhatsApp Business API (uzun vadeli, en etkili)
+
+**Belgeler:**
+- `docs/FurkanMeclisi_Bildirim_Arastirma.pdf` — detaylı karşılaştırma raporu
+- `rapor_pdf_bildirim_arastirma.py` — PDF oluşturucu script
+
+---
+
 ## v1.77 — 2026-10-25
 
 ### Tur Matrisi — Varsayılan Tur Seçimi Düzeltmesi

@@ -2,7 +2,11 @@
 
 ## Açık Görevler
 
-*Şu an açık görev yok.*
+### Bildirim Sistemi (Planlanan — 2026-10-01)
+
+- [ ] **Aşama 1 — Web Push + Vercel Cron:** Service worker + VAPID kurulumu; her gün saat 20:00'de okumayan üyelere otomatik bildirim
+- [ ] **Aşama 2 — WhatsApp Business API:** Meta Business kayıt + şablon mesaj onayı + Vercel Cron entegrasyonu
+- Detay: `docs/FurkanMeclisi_Bildirim_Arastirma.pdf`
 
 ---
 
