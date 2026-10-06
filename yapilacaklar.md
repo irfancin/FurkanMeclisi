@@ -12,6 +12,23 @@
 
 ## Tamamlanan Görevler
 
+### 2026-10-06 — Yönetici Kaydı Görsel Ayırt Edici (v1.79)
+
+- [x] **Migration 009:** `okuma_kayitlari.manuel_mi boolean DEFAULT false` kolonu eklendi
+- [x] **`/api/okuma` POST:** `manuel_mi` parametresi alınıp upsert'e geçirildi
+- [x] **`/api/admin/manuel-kayit` POST:** Tüm kayıtlara `manuel_mi: true` eklendi
+- [x] **`/api/admin/rapor` GET:** `manuel_mi` seçilip liste öğelerine dahil edildi
+- [x] **Okuyanlar listesi:** `manuel_mi=true` satırlarda amber arka plan + ismin başında `*` işareti
+- [x] Commit: `2527ddd`
+
+### 2026-10-05 — Okuyanlar Listesi Saat + Sıralama (v1.78)
+
+- [x] **`/api/admin/rapor` GET:** `okunma_saati` alanı eklendi
+- [x] **Okuyanlar listesi:** Her satırda kayıt saati `HH:mm` (Istanbul timezone) gösterilir
+- [x] **Cüz ⇅ / Saat ⇅ toggle:** Saat sıralamasında en son kaydedilen en üstte (yanlış kaydı bulmak için)
+- [x] **Optimistic UI:** `✍️ Kaydet` sonrası saat anında görünür
+- [x] Commit: `7246e9e`
+
 ### 2026-09-26 — Üye Silme Düzeltmesi + Hatim-4 DB Temizliği (v1.70)
 
 - [x] **`DELETE /api/admin/uyeler`:** Üye soft-delete edilince aktif dönem cüz ataması silinir (cüz yeni üye için serbest kalır); gelecek tarihli okuma kayıtları silinir; geçmiş okuma geçmişi korunur

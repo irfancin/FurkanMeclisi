@@ -9,7 +9,7 @@ Kur'an hatim grubunu yönetmek için geliştirilmiş mobil-öncelikli web uygula
 - **Deploy:** Vercel (otomatik CI/CD — main branch → production)
 - **Repo:** /home/irfan/FurkanMeclisi
 - **Başlatma (local):** `npm run dev` (port 3000)
-- **Güncel versiyon:** v1.77 (`VERSIYON` sabiti `src/app/page.tsx`'te)
+- **Güncel versiyon:** v1.79 (`VERSIYON` sabiti `src/app/page.tsx`'te)
 - **Yapılacaklar:** `yapilacaklar.md` — açık görevler burada takip edilir
 
 ---
@@ -62,7 +62,9 @@ FurkanMeclisi/
 │   ├── 004_add_pin_column.sql
 │   ├── 005_normalize_tel_no.sql
 │   ├── 006_multi_cuz_atamalari.sql   # donem_atamalari unique: (kullanici+donem+cuz)
-│   └── 007_okuma_kayitlari_cuz_no.sql  # okuma_kayitlari.cuz_no + unique güncelleme
+│   ├── 007_okuma_kayitlari_cuz_no.sql  # okuma_kayitlari.cuz_no + unique güncelleme
+│   ├── 008_tel_no_per_grup_unique.sql  # tel_no unique: global → grup bazlı
+│   └── 009_manuel_mi.sql               # okuma_kayitlari.manuel_mi boolean DEFAULT false
 ├── yapilacaklar.md                    # Açık görevler + tamamlanan geçmiş
 └── public/
 ```
@@ -79,7 +81,7 @@ FurkanMeclisi/
 | `donemler` | Tur periyotları — `grup_id`, `tur_no`, `baslangic_tarihi`, `bitis_tarihi`; `unique(grup_id, tur_no)` |
 | `donem_atamalari` | `kullanici_id × donem_id × cuz_no`; `unique(kullanici_id, donem_id, cuz_no)` — BİR kullanıcının aynı dönemde birden fazla cüzü olabilir (migration 006) |
 | `kullanicilar` | `tel_no` (unique, başında 0 yok), `ad_soyad`, `grup_id` (nullable — yönetici/sistem için), `kullanici_tipi` (Uye/Yonetici/Sistem Bakim), `aktif`, `pin` (nullable = ilk giriş yapılmamış) |
-| `okuma_kayitlari` | Günlük okuma; `cuz_no` kolonu eklendi (migration 007); `unique(kullanici_id, tarih, cuz_no)` — multi-cüz kullanıcı aynı günde birden fazla kayıt alabilir |
+| `okuma_kayitlari` | Günlük okuma; `cuz_no` kolonu eklendi (migration 007); `unique(kullanici_id, tarih, cuz_no)` — multi-cüz kullanıcı aynı günde birden fazla kayıt alabilir; `manuel_mi boolean DEFAULT false` (migration 009) — yönetici adına girilen kayıtları işaretler |
 | `giris_loglari` | Giriş zamanı, IP, cihaz |
 
 ### Önemli DB Kuralları
@@ -130,7 +132,9 @@ FurkanMeclisi/
 
 ### Raporlar
 - **Günlük rapor:** Okumayan (üstte, WA linki + **✍️ Kaydet** butonu) + Okuyan listesi (daraltılmış)
-  - ✍️ Kaydet: `/api/okuma` POST ile bugünün tarihine anında kayıt; optimistic UI ile satır Okuyanlar'a geçer
+  - ✍️ Kaydet: `/api/okuma` POST — `{ kullanici_id, cuz_no, manuel_mi: true }` ile bugünün tarihine anında kayıt; optimistic UI ile satır Okuyanlar'a geçer
+  - Okuyanlar listesi: `okunma_saati` (HH:mm, Istanbul) gösterilir; **Cüz ⇅ / Saat ⇅** toggle ile sıralama değiştirilebilir (saat sırasında en son kaydedilen en üstte)
+  - **Yönetici kaydı görseli:** `manuel_mi=true` olan satırlarda amber arka plan + ismin başında `*` işareti
 - **Tur matrisi:** Üye × gün grid, çift scroll bar (üst + alt), özet toggle
 - KPI kartları: Bugün okuyan sayısı, tur ilerleme %, eksik üyeler
 
@@ -138,7 +142,7 @@ FurkanMeclisi/
 - **Ekran:** `/admin/manuel-kayit` — uygulamayı kullanamayan üyeler adına yönetici giriş yapar
 - **Akış:** Grup → Üye seç → Dönem/cüz özeti görünür → Tarih (dönem sınırında) → Gün sayısı (slider) → Kaydet
 - **Tüm Dönemi Tamamla:** Slider'ı dönem sonuna ayarlayan kısayol butonu
-- **API:** `/api/admin/manuel-kayit` — GET: üyenin dönem + cüz bilgisi; POST: `{kullanici_id, tarih_baslangic, gun_sayisi}` — üyenin tüm cüzleri × tarih aralığı upsert, dönem sonu aşımı koruması var
+- **API:** `/api/admin/manuel-kayit` — GET: üyenin dönem + cüz bilgisi; POST: `{kullanici_id, tarih_baslangic, gun_sayisi}` — üyenin tüm cüzleri × tarih aralığı upsert, dönem sonu aşımı koruması var; tüm kayıtlar `manuel_mi: true` ile eklenir
 
 ---
 
@@ -171,6 +175,8 @@ FurkanMeclisi/
 | `donem_atamalari`'nda `.single()` veya `.maybeSingle()` kullanmak | Bir kullanıcının birden fazla cüzü olabilir — `.order('cuz_no')` ile tüm satırları al; geçici PIN için `.order('cuz_no', { ascending: true })` ile en küçük cüzü kullan |
 | `okuma_kayitlari` sorgusuyla distinct gün saymak | `new Set(rows.map(o => o.tarih)).size` kullan — multi-cüz günde birden fazla satır oluşturur |
 | `okuma_kayitlari` upsert'te `onConflict: 'kullanici_id,tarih'` | Yeni constraint: `'kullanici_id,tarih,cuz_no'` |
+| `/api/okuma` POST'ta `manuel_mi` göndermemek (yönetici sayfasından) | `raporlar/page.tsx`'teki `kayitGir` ve `manuel-kayit/route.ts` `manuel_mi: true` göndermeli; üye kendi kaydında `manuel_mi` gönderilmez → `DEFAULT false` devreye girer |
+| Supabase SQL editor'da `ADD COLUMN ... DEFAULT false` tek satırda çalıştırmak | `IF NOT EXISTS` ile birlikte hata verebilir; iki adıma böl: önce `ADD COLUMN`, sonra `ALTER COLUMN ... SET DEFAULT false` |
 | `parseCuzlar` sonucunu doğrudan kullanmak | Önce `[...new Set(...)]` ile tekilleştir — duplicate cüz girişi donem_atamalari'nda çift satır oluşturur |
 | Düzenleme formunda `autoComplete` bırakmak | `autoComplete="off"` zorunlu — iOS Safari autofill tel_no alanını değiştirip sahte çakışma hatası üretir |
 | Giriş telefon alanında `autoComplete="off"` kullanmak | `autoComplete="tel"` kullan — "off" otodolguyu kaldırır ve kullanıcı manuel yazarken tipoyu önleyemez; Playwright otodolgu kullandığından tipoyu görmez |
