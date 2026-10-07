@@ -126,6 +126,10 @@ export default function RaporlarPage() {
   useEffect(() => {
     if (!seciliGrup) return
     raporYukle(seciliGrup)
+    // Stale donem/matris verisini hemen temizle — matrisYukle boş donemle tetiklenmesin
+    setSeciliDonem('')
+    setDonemler([])
+    setMatris(null)
     fetch(`/api/admin/raporlar?tip=donemler&grup_id=${seciliGrup}`)
       .then(r => r.json()).then(d => {
         const liste: Donem[] = d.donemler ?? []

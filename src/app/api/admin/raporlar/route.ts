@@ -104,6 +104,7 @@ export async function GET(req: NextRequest) {
       .from('donemler')
       .select('*')
       .eq('id', donem_id)
+      .eq('grup_id', grup_id)  // donem_id'nin bu gruba ait olduğunu doğrula
       .single()
 
     if (!donem) return NextResponse.json({ hata: 'Dönem bulunamadı.' }, { status: 404 })
