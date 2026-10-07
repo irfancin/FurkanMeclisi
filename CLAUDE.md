@@ -9,7 +9,7 @@ Kur'an hatim grubunu yönetmek için geliştirilmiş mobil-öncelikli web uygula
 - **Deploy:** Vercel (otomatik CI/CD — main branch → production)
 - **Repo:** /home/irfan/FurkanMeclisi
 - **Başlatma (local):** `npm run dev` (port 3000)
-- **Güncel versiyon:** v1.79 (`VERSIYON` sabiti `src/app/page.tsx`'te)
+- **Güncel versiyon:** v1.80 (`VERSIYON` sabiti `src/app/page.tsx`'te)
 - **Yapılacaklar:** `yapilacaklar.md` — açık görevler burada takip edilir
 
 ---
@@ -184,6 +184,8 @@ FurkanMeclisi/
 | `sessionStorage.fm_cikis` bayrağını form gösterirken silmek | Bayrağı yalnızca `oturumKaydet()` içinde (başarılı giriş anında) sil — erken silmek, geri navigasyonunda bayrağı yok eder ve otomatik giriş devreye girer |
 | Test SQL'inde gerçek telefon numarası kullanmak | `999000000X` gibi açıkça uydurma numaralar kullan — gerçek DB'de aynı numara `aktif=false` ile kayıtlıysa `ON CONFLICT DO NOTHING` yeni kaydı sessizce atlar, eski pasif kayıt kalır |
 | Test SQL'inde `ON CONFLICT DO NOTHING` ile `aktif=true` garantilemek | `ON CONFLICT` çakışma varsa güncelleme yapmaz; `UPDATE SET aktif=true WHERE tel_no IN (...)` ekle VEYA temizleme SQL'ini önce çalıştırıp temiz INSERT yap |
+| Matris sekmesinde grup değişince eski dönem korunursa | Race condition: yeni grup_id + eski donem_id kombinasyonu API'ye gider; `useEffect`'te `setSeciliDonem('')` + `setMatris(null)` ile stale veriyi hemen temizle |
+| Matris API'ye çapraz grup kombinasyonu gelebileceğini görmezden gelmek | `raporlar/route.ts` matris sorgusuna `.eq('grup_id', grup_id)` ekle — yanlış donem_id gelirse 404 döner, veri sızmaz |
 
 ---
 

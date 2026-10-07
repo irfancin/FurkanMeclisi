@@ -12,6 +12,12 @@
 
 ## Tamamlanan Görevler
 
+### 2026-10-07 — Tur Matrisi Race Condition Düzeltmesi (v1.80)
+
+- [x] **Frontend fix:** Grup değişince `setSeciliDonem('')` + `setDonemler([])` + `setMatris(null)` — stale donem ile matrisYukle tetiklenmesi engellendi
+- [x] **API fix:** `raporlar/route.ts` matris sorgusuna `.eq('grup_id', grup_id)` eklendi — yanlış donem/grup kombinasyonu 404 döner
+- [x] Commit: `fdf11da`
+
 ### 2026-10-06 — Yönetici Kaydı Görsel Ayırt Edici (v1.79)
 
 - [x] **Migration 009:** `okuma_kayitlari.manuel_mi boolean DEFAULT false` kolonu eklendi
