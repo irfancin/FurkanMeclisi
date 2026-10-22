@@ -12,11 +12,31 @@ interface DonemBilgi {
   uye_sayisi: number
   grup_tipi: 'Hatim' | 'Zikir'
 }
+interface Onizleme {
+  grup_adi: string
+  yeni_tur_no: number
+  baslangic_tarihi: string
+  bitis_tarihi: string
+  atamalar: { cuz_no: number; ad_soyad: string }[]
+}
 
 function tarihFormatla(iso: string) {
   return new Date(iso).toLocaleDateString('tr-TR', {
     day: 'numeric', month: 'long', year: 'numeric'
   })
+}
+
+function mesajOlustur(o: Onizleme): string {
+  const bas = tarihFormatla(o.baslangic_tarihi)
+  const bit = tarihFormatla(o.bitis_tarihi)
+  return [
+    `${o.grup_adi.toLocaleUpperCase('tr-TR')} (${o.yeni_tur_no}. TUR)`,
+    '',
+    `Başlangıç : ${bas}`,
+    `Bitiş     : ${bit}`,
+    '',
+    ...o.atamalar.map(a => `${a.cuz_no}.cüz- ${a.ad_soyad}`)
+  ].join('\n')
 }
 
 type Adim = 'bilgi' | 'onay' | 'tamam'
@@ -29,6 +49,11 @@ export default function RotasyonPage() {
   const [adim, setAdim] = useState<Adim>('bilgi')
   const [sonuc, setSonuc] = useState<{ yeni_tur_no: number; atanan: number } | null>(null)
   const [islem, setIslem] = useState(false)
+
+  const [onizleme, setOnizleme] = useState<Onizleme | null>(null)
+  const [onizlemeYukleniyor, setOnizlemeYukleniyor] = useState(false)
+  const [onizlemeHata, setOnizlemeHata] = useState('')
+  const [kopyalandi, setKopyalandi] = useState(false)
 
   useEffect(() => {
     fetch('/api/admin/gruplar')
@@ -43,6 +68,8 @@ export default function RotasyonPage() {
     setHata('')
     setDonemBilgi(null)
     setAdim('bilgi')
+    setOnizleme(null)
+    setOnizlemeHata('')
     const res = await fetch(`/api/admin/rotasyon?grup_id=${grup_id}`)
     const d = await res.json()
     if (!res.ok) setHata(d.hata)
@@ -71,6 +98,24 @@ export default function RotasyonPage() {
     }
   }
 
+  const onizleClick = async () => {
+    setOnizlemeYukleniyor(true)
+    setOnizleme(null)
+    setOnizlemeHata('')
+    const res = await fetch(`/api/admin/rotasyon/onizle?grup_id=${seciliGrup}`)
+    const d = await res.json()
+    setOnizlemeYukleniyor(false)
+    if (!res.ok) setOnizlemeHata(d.hata)
+    else setOnizleme(d)
+  }
+
+  const kopyala = async () => {
+    if (!onizleme) return
+    await navigator.clipboard.writeText(mesajOlustur(onizleme))
+    setKopyalandi(true)
+    setTimeout(() => setKopyalandi(false), 2000)
+  }
+
   const { yeniBasStr, yeniBitStr, araBasStr, araBitStr } = donemBilgi
     ? (() => {
         const araBas = new Date(donemBilgi.donem.bitis_tarihi)
@@ -92,7 +137,7 @@ export default function RotasyonPage() {
 
   return (
     <div className="py-4 max-w-lg space-y-4">
-        {/* Grup seç */}
+      {/* Grup seç */}
       <div>
         <label className="block text-xs font-medium text-slate-500 mb-1">Grup</label>
         <select
@@ -150,12 +195,61 @@ export default function RotasyonPage() {
             )}
           </div>
 
-          <button
-            onClick={() => setAdim('onay')}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-xl transition-colors"
-          >
-            Yeni Tur Başlat →
-          </button>
+          <div className="flex gap-2">
+            {donemBilgi.grup_tipi === 'Hatim' && (
+              <button
+                onClick={onizleClick}
+                disabled={onizlemeYukleniyor}
+                className="flex-1 border border-slate-300 text-slate-600 font-medium py-3 rounded-xl hover:bg-slate-50 transition-colors text-sm disabled:opacity-50"
+              >
+                {onizlemeYukleniyor ? 'Yükleniyor...' : '👁 Sonraki Tur Listesi'}
+              </button>
+            )}
+            <button
+              onClick={() => setAdim('onay')}
+              className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-xl transition-colors"
+            >
+              Yeni Tur Başlat →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Önizleme paneli */}
+      {adim === 'bilgi' && onizlemeHata && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 text-sm">{onizlemeHata}</div>
+      )}
+      {adim === 'bilgi' && onizleme && (
+        <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+          <p className="text-xs text-slate-400 uppercase tracking-wide">
+            Sonraki Tur Mesaj Önizlemesi — {onizleme.yeni_tur_no}. Tur
+          </p>
+          <textarea
+            readOnly
+            value={mesajOlustur(onizleme)}
+            rows={Math.min(onizleme.atamalar.length + 6, 20)}
+            className="w-full text-sm font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 resize-none focus:outline-none leading-relaxed"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={kopyala}
+              className={`flex-1 font-medium py-2.5 rounded-xl text-sm transition-colors ${
+                kopyalandi
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              }`}
+            >
+              {kopyalandi ? '✓ Kopyalandı!' : '📋 Kopyala'}
+            </button>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(mesajOlustur(onizleme))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium py-2.5 rounded-xl text-sm transition-colors text-center"
+            >
+              💬 WhatsApp&apos;ta Aç
+            </a>
+          </div>
         </div>
       )}
 
