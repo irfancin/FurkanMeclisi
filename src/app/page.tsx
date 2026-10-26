@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { OturumKullanici } from '@/types'
 
-const VERSIYON = 'v1.82'
+const VERSIYON = 'v1.83'
 
 type Adim = 'tel' | 'grup-sec' | 'otomatik'
 
@@ -91,18 +91,21 @@ export default function GirisPage() {
         oturumKaydet(kullanicilar, kullanicilar[0])
         return
       }
-      // Çoklu grup
-      const sonGrupId = localStorage.getItem('fm_son_grup_id')
-      const sonGrup = sonGrupId ? kullanicilar.find(k => k.grup_id === sonGrupId) : null
-      if (sonGrup) {
-        oturumKaydet(kullanicilar, sonGrup)
-      } else {
-        setYukleniyor(false)
-        const hatim = kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
-        setBulunanlar(kullanicilar)
-        setSeciliGrupId(hatim.grup_id)
-        setAdim('grup-sec')
+      // Çoklu grup — Yonetici kaydı varsa her zaman grup seçim ekranını göster
+      const yoneticiKayit = kullanicilar.find(k => k.kullanici_tipi === 'Yonetici')
+      if (!yoneticiKayit) {
+        const sonGrupId = localStorage.getItem('fm_son_grup_id')
+        const sonGrup = sonGrupId ? kullanicilar.find(k => k.grup_id === sonGrupId) : null
+        if (sonGrup) {
+          oturumKaydet(kullanicilar, sonGrup)
+          return
+        }
       }
+      setYukleniyor(false)
+      const varsayilan = yoneticiKayit ?? kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
+      setBulunanlar(kullanicilar)
+      setSeciliGrupId(varsayilan.grup_id)
+      setAdim('grup-sec')
     })
   }, [router, girisYap, oturumKaydet])
 
@@ -126,18 +129,21 @@ export default function GirisPage() {
       oturumKaydet(kullanicilar, kullanicilar[0])
       return
     }
-    // Çoklu grup
-    const sonGrupId = localStorage.getItem('fm_son_grup_id')
-    const sonGrup = sonGrupId ? kullanicilar.find(k => k.grup_id === sonGrupId) : null
-    if (sonGrup) {
-      oturumKaydet(kullanicilar, sonGrup)
-    } else {
-      setYukleniyor(false)
-      const hatim = kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
-      setBulunanlar(kullanicilar)
-      setSeciliGrupId(hatim.grup_id)
-      setAdim('grup-sec')
+    // Çoklu grup — Yonetici kaydı varsa her zaman grup seçim ekranını göster
+    const yoneticiKayit = kullanicilar.find(k => k.kullanici_tipi === 'Yonetici')
+    if (!yoneticiKayit) {
+      const sonGrupId = localStorage.getItem('fm_son_grup_id')
+      const sonGrup = sonGrupId ? kullanicilar.find(k => k.grup_id === sonGrupId) : null
+      if (sonGrup) {
+        oturumKaydet(kullanicilar, sonGrup)
+        return
+      }
     }
+    setYukleniyor(false)
+    const varsayilan = yoneticiKayit ?? kullanicilar.find(k => k.grup_tipi === 'Hatim') ?? kullanicilar[0]
+    setBulunanlar(kullanicilar)
+    setSeciliGrupId(varsayilan.grup_id)
+    setAdim('grup-sec')
   }
 
   const grupSec = () => {
