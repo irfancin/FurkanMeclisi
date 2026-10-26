@@ -121,22 +121,17 @@ export async function POST(req: NextRequest) {
           : []
 
         if (istenenCuzler.length > 0) {
-          // Talep edilen cüzleri ata (müsait olanları)
-          const { data: mevcutAtamalar } = await supabase
-            .from('donem_atamalari')
-            .select('cuz_no')
-            .eq('donem_id', donem.id)
-          const atananSet = new Set((mevcutAtamalar ?? []).map(a => a.cuz_no))
-
-          for (const cuz of istenenCuzler) {
-            if (!atananSet.has(cuz)) {
-              await supabase.from('donem_atamalari').insert({
-                kullanici_id: yeniUye.id,
-                donem_id: donem.id,
-                cuz_no: cuz,
-              })
-              atananSet.add(cuz)
-            }
+          // Doğrudan cüz ataması — PATCH ile aynı mantık (atananSet kontrolü yoktu, sessizce atlıyordu)
+          const { error: cuzErr } = await supabase.from('donem_atamalari').insert(
+            istenenCuzler.map(cuz_no => ({ kullanici_id: yeniUye.id, donem_id: donem.id, cuz_no }))
+          )
+          if (cuzErr) {
+            // Cüz başkasına atanmış — yeni üyeyi geri al ve hata döndür
+            await supabase.from('kullanicilar').delete().eq('id', yeniUye.id)
+            return NextResponse.json(
+              { hata: 'Girilen cüz numarası başkasına atanmış. Farklı bir cüz girin veya boş bırakın.' },
+              { status: 409 }
+            )
           }
         } else {
           // Otomatik: ilk müsait cüzü ata
